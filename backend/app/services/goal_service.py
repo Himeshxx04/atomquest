@@ -364,6 +364,29 @@ def update_actual(goal_id: int, cycle_id: int, actual_numeric, actual_date,
     if sheet.status != SheetStatus.APPROVED:
         raise HTTPException(status_code=400, detail="Goals must be approved before logging actuals.")
 
+    # BRD: actuals can only be logged during an active check-in cycle window
+    from ..models.goal import CyclePhase
+    checkin_phases = {CyclePhase.Q1, CyclePhase.Q2, CyclePhase.Q3, CyclePhase.Q4}
+    cycle = db.query(Cycle).filter(Cycle.id == cycle_id).first()
+    if not cycle:
+        raise HTTPException(status_code=404, detail="Cycle not found")
+    if cycle.phase not in checkin_phases:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Actuals can only be logged during a check-in cycle (Q1–Q4). Current cycle phase is '{cycle.phase.value}'."
+        )
+    today = datetime.now(timezone.utc).date()
+    if cycle.start_date and today < cycle.start_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"The {cycle.phase.value.upper()} check-in window opens on {cycle.start_date}. You cannot log actuals yet."
+        )
+    if cycle.end_date and today > cycle.end_date:
+        raise HTTPException(
+            status_code=400,
+            detail=f"The {cycle.phase.value.upper()} check-in window closed on {cycle.end_date}. Contact Admin if you need to log late actuals."
+        )
+
     score = compute_progress_score(goal, actual_numeric, actual_date)
 
     actual = db.query(QuarterlyActual).filter(
