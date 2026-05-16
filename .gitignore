@@ -46,3 +46,6 @@ logs/
 
 # Redis dump
 dump.rdb
+
+# Project planning notes
+CLAUDE.md
