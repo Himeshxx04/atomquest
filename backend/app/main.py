@@ -23,5 +23,9 @@ def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
-# Routes will be registered here as each feature is built
-# from .api.routes import auth, goals, checkins, manager, admin, analytics, reports
+from .api.routes import auth
+
+app.include_router(auth.router)
+
+# Additional routers registered as features are built:
+# from .api.routes import goals, checkins, manager, admin, analytics, reports

@@ -114,7 +114,13 @@ D:\atomquest\
 - models/escalation.py — EscalationRule + EscalationEvent tables
 - alembic setup with env.py wired to models
 
-### 🔲 Feature 2 — Auth Routes (login, Azure SSO, role-switch)
+### ✅ Feature 2 — Auth Routes (login, Azure SSO, role-switch)
+- schemas/user.py — UserCreate, UserRead, LoginRequest, TokenResponse, DemoSwitchRequest
+- services/auth_service.py — login, azure SSO upsert, demo role-switch, token issuance
+- api/routes/auth.py — POST /auth/login, POST /auth/azure, POST /auth/demo-switch, GET /auth/me
+- scripts/seed.py — creates 3 demo users, 5 thrust areas, 5 cycles, 3 escalation rules
+
+### 🔲 Feature 3 — Goal CRUD + BRD Validation (weightage, max 8, locking)
 ### 🔲 Feature 3 — Goal CRUD + BRD Validation (weightage, max 8, locking)
 ### 🔲 Feature 4 — Manager Approval Workflow
 ### 🔲 Feature 5 — Shared Goals
