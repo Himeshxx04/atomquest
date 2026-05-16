@@ -1,5 +1,5 @@
 """
-Run from backend\ directory:
+Run from backend/ directory:
     python -m scripts.seed
 
 Creates:

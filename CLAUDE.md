@@ -120,18 +120,23 @@ D:\atomquest\
 - api/routes/auth.py — POST /auth/login, POST /auth/azure, POST /auth/demo-switch, GET /auth/me
 - scripts/seed.py — creates 3 demo users, 5 thrust areas, 5 cycles, 3 escalation rules
 
-### 🔲 Feature 3 — Goal CRUD + BRD Validation (weightage, max 8, locking)
-### 🔲 Feature 3 — Goal CRUD + BRD Validation (weightage, max 8, locking)
-### 🔲 Feature 4 — Manager Approval Workflow
-### 🔲 Feature 5 — Shared Goals
-### 🔲 Feature 6 — Quarterly Actuals + Progress Score Engine
-### 🔲 Feature 7 — Reports (CSV/Excel export + Completion Dashboard)
-### 🔲 Feature 8 — Audit Trail
-### 🔲 Feature 9 — Escalation Engine (APScheduler)
-### 🔲 Feature 10 — Email Notifications (SendGrid)
-### 🔲 Feature 11 — Analytics Module
-### 🔲 Feature 12 — Frontend Scaffold + Auth UI
-### 🔲 Feature 13 — Employee Dashboard
+### ✅ Feature 3 — Goal CRUD + BRD Validation
+- schemas/goal.py — all goal/sheet/checkin/shared-goal Pydantic schemas with inline validation
+- services/goal_service.py — BRD rules, progress score engine, shared goal sync, audit logging
+- api/routes/goals.py — 18 endpoints covering full goal lifecycle
+- Key rules enforced: max 8 goals, min 10% weightage, total=100% on submit, lock on approval, shared goal sync
+
+### 🔲 Feature 4 — Admin Routes + Reports (CSV/Excel export, audit log, completion dashboard)
+### 🔲 Feature 5 — Escalation Engine (APScheduler)
+### 🔲 Feature 6 — Email Notifications (SendGrid)
+### 🔲 Feature 7 — Analytics Module
+### 🔲 Feature 8 — Frontend Scaffold + Auth UI
+### 🔲 Feature 9 — Employee Dashboard
+### 🔲 Feature 10 — Manager Dashboard
+### 🔲 Feature 11 — Admin Dashboard
+### 🔲 Feature 12 — Analytics UI (charts, heatmaps)
+### 🔲 Feature 13 — Azure AD SSO (MSAL.js)
+### 🔲 Feature 14 — Deployment (Railway + Vercel)
 ### 🔲 Feature 14 — Manager Dashboard
 ### 🔲 Feature 15 — Admin Dashboard
 ### 🔲 Feature 16 — Analytics UI (charts, heatmaps)
