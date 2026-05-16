@@ -54,7 +54,7 @@ export default function Users() {
     e.preventDefault()
     if (!editUser) return
     try {
-      await api.put(`/admin/users/${editUser.id}`, {
+      await api.patch(`/admin/users/${editUser.id}`, {
         name: form.name, role: form.role, department: form.department || null,
         manager_id: form.manager_id ? Number(form.manager_id) : null,
       })
@@ -68,7 +68,7 @@ export default function Users() {
 
   const toggleActive = async (u: User) => {
     try {
-      await api.put(`/admin/users/${u.id}`, { is_active: !u.is_active })
+      await api.patch(`/admin/users/${u.id}`, { is_active: !u.is_active })
       toast.success(`User ${u.is_active ? 'deactivated' : 'activated'}`)
       load()
     } catch { toast.error('Action failed') }

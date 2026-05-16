@@ -54,7 +54,7 @@ export default function ManagerDashboard() {
   useEffect(() => {
     if (!selectedCycle) return
     setLoading(true)
-    api.get(`/goals/team-sheets?cycle_id=${selectedCycle.id}`)
+    api.get(`/goals/manager/team-sheets?cycle_id=${selectedCycle.id}`)
       .then((r) => setSheets(r.data))
       .catch(() => toast.error('Failed to load team sheets'))
       .finally(() => setLoading(false))
@@ -63,7 +63,7 @@ export default function ManagerDashboard() {
   const handleApprove = async (sheetId: number) => {
     setApproving(sheetId)
     try {
-      await api.post(`/goals/sheets/${sheetId}/action`, { action: 'approve' })
+      await api.post(`/goals/sheets/${sheetId}/manager-action`, { action: 'approve' })
       toast.success('Sheet approved!')
       setSheets((prev) => prev.map((s) => s.id === sheetId ? { ...s, status: 'approved' } : s))
     } catch (err: any) {
@@ -76,7 +76,7 @@ export default function ManagerDashboard() {
   const handleReturn = async (sheetId: number) => {
     if (!returnReason.trim()) { toast.error('Please provide a return reason'); return }
     try {
-      await api.post(`/goals/sheets/${sheetId}/action`, { action: 'return', return_reason: returnReason })
+      await api.post(`/goals/sheets/${sheetId}/manager-action`, { action: 'return', return_reason: returnReason })
       toast.success('Sheet returned to employee')
       setSheets((prev) => prev.map((s) => s.id === sheetId ? { ...s, status: 'returned', return_reason: returnReason } : s))
       setShowReturnId(null)
@@ -89,11 +89,13 @@ export default function ManagerDashboard() {
   const handleCheckinComment = async (_sheetId: number, employeeId: number) => {
     if (!checkinComment.trim() || !selectedCycle) return
     try {
-      await api.post('/goals/checkin-comments', {
-        employee_id: employeeId,
-        cycle_id: selectedCycle.id,
-        comment: checkinComment,
-      })
+      // Find the sheet for this employee in the current cycle
+      const empSheet = sheets.find((s) => s.employee.id === employeeId)
+      if (!empSheet) return
+      await api.post(
+        `/goals/sheets/${empSheet.id}/checkin-comment?cycle_id=${selectedCycle.id}`,
+        { comment: checkinComment }
+      )
       toast.success('Check-in comment saved')
       setCommentSheetId(null)
       setCheckinComment('')

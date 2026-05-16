@@ -57,7 +57,7 @@ export default function EmployeeDashboard() {
   useEffect(() => {
     if (!selectedCycle) return
     setLoading(true)
-    api.get(`/goals/my-sheet?cycle_id=${selectedCycle.id}`)
+    api.get(`/goals/sheets/me?cycle_id=${selectedCycle.id}`)
       .then((r) => setSheet(r.data))
       .catch(() => setSheet(null))
       .finally(() => setLoading(false))
@@ -76,7 +76,7 @@ export default function EmployeeDashboard() {
     setShowForm(false)
     setEditGoal(null)
     if (!selectedCycle) return
-    const { data } = await api.get(`/goals/my-sheet?cycle_id=${selectedCycle.id}`)
+    const { data } = await api.get(`/goals/sheets/me?cycle_id=${selectedCycle.id}`)
     setSheet(data)
   }
 

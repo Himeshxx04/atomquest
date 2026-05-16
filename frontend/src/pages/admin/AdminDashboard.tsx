@@ -43,7 +43,7 @@ export default function AdminDashboard() {
   const downloadReport = async (type: 'csv' | 'excel') => {
     if (!selectedCycle) return
     try {
-      const res = await api.get(`/admin/reports/achievement-${type}?cycle_id=${selectedCycle.id}`, {
+      const res = await api.get(`/admin/reports/achievement/${type}?cycle_id=${selectedCycle.id}`, {
         responseType: 'blob'
       })
       const url = URL.createObjectURL(res.data)
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
                   onClick={async () => {
                     if (!selectedCycle) return
                     try {
-                      const res = await api.get(`/admin/reports/completion-excel?cycle_id=${selectedCycle.id}`, { responseType: 'blob' })
+                      const res = await api.get(`/admin/reports/completion/excel?cycle_id=${selectedCycle.id}`, { responseType: 'blob' })
                       const url = URL.createObjectURL(res.data)
                       const a = document.createElement('a'); a.href = url
                       a.download = `completion-${selectedCycle.year}.xlsx`; a.click()

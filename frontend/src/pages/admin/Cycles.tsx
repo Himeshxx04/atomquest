@@ -18,7 +18,7 @@ export default function Cycles() {
 
   const load = () => {
     setLoading(true)
-    api.get('/admin/cycles').then((r) => setCycles(r.data)).catch(() => toast.error('Failed to load cycles')).finally(() => setLoading(false))
+    api.get('/goals/cycles').then((r) => setCycles(r.data)).catch(() => toast.error('Failed to load cycles')).finally(() => setLoading(false))
   }
 
   useEffect(load, [])
@@ -28,7 +28,7 @@ export default function Cycles() {
     try {
       const payload = { ...form, year: Number(form.year) }
       if (editCycle) {
-        await api.put(`/admin/cycles/${editCycle.id}`, payload)
+        await api.patch(`/admin/cycles/${editCycle.id}`, payload)
         toast.success('Cycle updated')
       } else {
         await api.post('/admin/cycles', payload)
@@ -43,7 +43,7 @@ export default function Cycles() {
 
   const toggleActive = async (c: Cycle) => {
     try {
-      await api.put(`/admin/cycles/${c.id}`, { is_active: !c.is_active })
+      await api.patch(`/admin/cycles/${c.id}`, { is_active: !c.is_active })
       toast.success(`Cycle ${c.is_active ? 'deactivated' : 'activated'}`)
       load()
     } catch { toast.error('Failed') }

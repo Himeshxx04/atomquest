@@ -30,8 +30,7 @@ export default function ActualModal({ goal, cycles, onClose }: Props) {
     e.preventDefault()
     setSaving(true)
     try {
-      await api.put(`/goals/actuals/${goal.id}`, {
-        cycle_id: Number(cycleId),
+      await api.put(`/goals/goals/${goal.id}/actuals?cycle_id=${cycleId}`, {
         actual_numeric: actualNumeric ? Number(actualNumeric) : null,
         actual_date: actualDate || null,
         status,
