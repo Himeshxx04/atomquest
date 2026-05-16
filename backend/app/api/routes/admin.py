@@ -277,3 +277,14 @@ def list_escalation_events(
     if is_resolved is not None:
         q = q.filter(EscalationEvent.is_resolved == is_resolved)
     return q.order_by(EscalationEvent.triggered_at.desc()).all()
+
+
+@router.post("/escalation/run-now")
+def trigger_escalation_manually(_=admin_only):
+    """
+    Manually trigger all escalation checks immediately.
+    Useful for demos and testing without waiting for the 6-hour schedule.
+    """
+    from ...services.escalation_service import run_all_checks
+    run_all_checks()
+    return {"message": "Escalation checks completed. Check /admin/escalation-events for results."}

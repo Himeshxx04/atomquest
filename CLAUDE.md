@@ -130,7 +130,11 @@ D:\atomquest\
 - schemas/admin.py — UserCreate/Update, CycleCreate/Update, AuditLogRead, CompletionStat
 - services/report_service.py — color-coded Excel + CSV for achievement & completion reports
 - api/routes/admin.py — user mgmt, cycle mgmt, thrust areas, audit log, completion dashboard, reports, escalation rule config
-### 🔲 Feature 5 — Escalation Engine (APScheduler)
+### ✅ Feature 5 — Escalation Engine (APScheduler)
+- services/escalation_service.py — 3 checks: employee_not_submitted, manager_not_approved, checkin_not_completed
+- scheduler/tasks.py — BackgroundScheduler, runs every 6 hours, starts/stops with FastAPI lifespan
+- POST /admin/escalation/run-now — manual trigger for demos
+- Auto-resolves events when the condition clears
 ### 🔲 Feature 6 — Email Notifications (SendGrid)
 ### 🔲 Feature 7 — Analytics Module
 ### 🔲 Feature 8 — Frontend Scaffold + Auth UI
