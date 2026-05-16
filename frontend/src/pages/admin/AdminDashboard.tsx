@@ -73,7 +73,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-full">
       {/* ── Page header ── */}
-      <div className="bg-white border-b border-slate-200 px-8 py-6">
+      <div className="bg-white border-b border-slate-200 px-10 py-7">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* ── Body ── */}
-      <div className="px-8 py-7 max-w-7xl">
+      <div className="px-10 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-32">
             <div className="w-10 h-10 border-3 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />

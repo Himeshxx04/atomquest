@@ -95,7 +95,7 @@ export default function ManagerDashboard() {
   return (
     <div className="min-h-full">
       {/* Page header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-6">
+      <div className="bg-white border-b border-slate-200 px-10 py-7">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">Team Overview</h1>
@@ -113,7 +113,7 @@ export default function ManagerDashboard() {
         </div>
       </div>
 
-      <div className="px-8 py-7 max-w-5xl">
+      <div className="px-10 py-8">
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-5 mb-7">
           <StatCard icon={<Users size={22} />}         label="Team Size"      value={total}     sub="direct reports"    color="blue" />

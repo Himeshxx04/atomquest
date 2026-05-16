@@ -110,7 +110,7 @@ export default function EmployeeDashboard() {
   return (
     <div className="min-h-full">
       {/* Page header */}
-      <div className="bg-white border-b border-slate-200 px-8 py-6">
+      <div className="bg-white border-b border-slate-200 px-10 py-7">
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">My Goals</h1>
@@ -130,7 +130,7 @@ export default function EmployeeDashboard() {
         </div>
       </div>
 
-      <div className="px-8 py-7 max-w-4xl">
+      <div className="px-10 py-8" style={{ maxWidth: '860px' }}>
         {/* Status + weight bar */}
         {sheet && (
           <div className={`flex items-center gap-3 px-5 py-4 rounded-2xl border mb-6 ${sc.bg} ${sc.border}`}>
