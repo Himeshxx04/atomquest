@@ -23,10 +23,11 @@ def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
-from .api.routes import auth, goals
+from .api.routes import auth, goals, admin
 
 app.include_router(auth.router)
 app.include_router(goals.router)
+app.include_router(admin.router)
 
 # Additional routers registered as features are built:
-# from .api.routes import admin, analytics, reports
+# from .api.routes import analytics
