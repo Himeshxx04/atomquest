@@ -135,7 +135,11 @@ D:\atomquest\
 - scheduler/tasks.py — BackgroundScheduler, runs every 6 hours, starts/stops with FastAPI lifespan
 - POST /admin/escalation/run-now — manual trigger for demos
 - Auto-resolves events when the condition clears
-### 🔲 Feature 6 — Email Notifications (SendGrid)
+### ✅ Feature 6 — Email Notifications (SendGrid)
+- services/notification_service.py — 5 email types: submitted, approved, returned, checkin reminder, escalation chain
+- Wired into goal_service.py on submit/approve/return — fires automatically
+- Graceful fallback: logs to console if SendGrid not configured, never breaks the app
+- Escalation emails follow the notify_chain (employee → manager → HR)
 ### 🔲 Feature 7 — Analytics Module
 ### 🔲 Feature 8 — Frontend Scaffold + Auth UI
 ### 🔲 Feature 9 — Employee Dashboard

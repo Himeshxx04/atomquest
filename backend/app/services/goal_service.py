@@ -238,6 +238,16 @@ def submit_sheet(sheet_id: int, employee: User, db: Session) -> GoalSheet:
     _log_audit(db, "goal_sheet", sheet.id, employee.id, "submitted")
     db.commit()
     db.refresh(sheet)
+
+    # Notify manager
+    try:
+        from .notification_service import notify_sheet_submitted
+        if employee.manager:
+            cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
+            notify_sheet_submitted(employee, employee.manager, cycle_label)
+    except Exception:
+        pass
+
     return sheet
 
 
@@ -289,6 +299,17 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
         sheet.approved_by = manager.id
         sheet.return_reason = None
         _log_audit(db, "goal_sheet", sheet.id, manager.id, "approved")
+        db.commit()
+        db.refresh(sheet)
+
+        try:
+            from .notification_service import notify_sheet_approved
+            cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
+            notify_sheet_approved(employee, cycle_label)
+        except Exception:
+            pass
+
+        return sheet
 
     elif action == "return":
         if not return_reason:
@@ -296,6 +317,17 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
         sheet.status = SheetStatus.RETURNED
         sheet.return_reason = return_reason
         _log_audit(db, "goal_sheet", sheet.id, manager.id, "returned", note=return_reason)
+        db.commit()
+        db.refresh(sheet)
+
+        try:
+            from .notification_service import notify_sheet_returned
+            cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
+            notify_sheet_returned(employee, return_reason, cycle_label)
+        except Exception:
+            pass
+
+        return sheet
 
     db.commit()
     db.refresh(sheet)
