@@ -279,6 +279,14 @@ def list_escalation_events(
     return q.order_by(EscalationEvent.triggered_at.desc()).all()
 
 
+@router.post("/test-email")
+def test_email(to: str, _=admin_only):
+    """Send a test email to verify SendGrid is configured correctly."""
+    from ...services.notification_service import _send
+    _send(to, "Test Email", "<p>AtomQuest email is working correctly. ✅</p>")
+    return {"message": f"Test email sent to {to}. Check your inbox and server logs."}
+
+
 @router.post("/escalation/run-now")
 def trigger_escalation_manually(_=admin_only):
     """
