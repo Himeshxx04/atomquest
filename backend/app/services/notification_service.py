@@ -1,13 +1,15 @@
 """
-Email notifications via SendGrid for all key events in the BRD:
+Notifications via SendGrid (email) and MS Teams (adaptive cards) for all key BRD events:
   - Goal sheet submitted (to manager)
   - Goal sheet approved (to employee)
   - Goal sheet returned (to employee, with reason)
   - Check-in reminder (to employee)
   - Escalation notification (to employee / manager / HR chain)
 
-Falls back silently if SendGrid is not configured — app never breaks.
+Falls back silently if not configured — app never breaks.
 """
+import urllib.request
+import json as _json
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from ..core.config import settings
@@ -18,6 +20,72 @@ from sqlalchemy.orm import Session
 
 def _enabled() -> bool:
     return bool(settings.SENDGRID_API_KEY and not settings.SENDGRID_API_KEY.startswith("your-"))
+
+
+def _teams_enabled() -> bool:
+    return bool(settings.TEAMS_WEBHOOK_URL)
+
+
+def _send_teams_card(title: str, message: str, deep_link_url: str, button_label: str, color: str = "accent"):
+    """Post an Adaptive Card to the MS Teams incoming webhook."""
+    if not _teams_enabled():
+        print(f"[Teams] SKIP (webhook not configured) → {title}")
+        return
+    card = {
+        "type": "message",
+        "attachments": [{
+            "contentType": "application/vnd.microsoft.card.adaptive",
+            "contentUrl": None,
+            "content": {
+                "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+                "type": "AdaptiveCard",
+                "version": "1.4",
+                "body": [
+                    {
+                        "type": "Container",
+                        "style": "emphasis",
+                        "items": [{
+                            "type": "TextBlock",
+                            "text": "⚡ AtomQuest — Goal Tracking Portal",
+                            "weight": "Bolder",
+                            "size": "Small",
+                            "color": "Accent"
+                        }]
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": title,
+                        "weight": "Bolder",
+                        "size": "Medium",
+                        "wrap": True
+                    },
+                    {
+                        "type": "TextBlock",
+                        "text": message,
+                        "wrap": True,
+                        "spacing": "Small"
+                    }
+                ],
+                "actions": [{
+                    "type": "Action.OpenUrl",
+                    "title": button_label,
+                    "url": deep_link_url
+                }]
+            }
+        }]
+    }
+    try:
+        payload = _json.dumps(card).encode("utf-8")
+        req = urllib.request.Request(
+            settings.TEAMS_WEBHOOK_URL,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            print(f"[Teams] SENT → {title} (status {resp.status})")
+    except Exception as e:
+        print(f"[Teams] FAILED → {title} | {e}")
 
 
 def _send(to_email: str, subject: str, html: str):
@@ -75,6 +143,12 @@ def notify_sheet_submitted(employee: User, manager: User, cycle_label: str):
         </a>
     """)
     _send(manager.email, f"{employee.name} submitted their goal sheet", html)
+    _send_teams_card(
+        title=f"📋 Goal Sheet Submitted — {employee.name}",
+        message=f"{employee.name} ({employee.department or '—'}) has submitted their goal sheet for **{cycle_label}** and is awaiting your approval.",
+        deep_link_url=f"{settings.FRONTEND_URL}/manager/approvals",
+        button_label="Review & Approve"
+    )
 
 
 def notify_sheet_approved(employee: User, cycle_label: str):
@@ -91,6 +165,12 @@ def notify_sheet_approved(employee: User, cycle_label: str):
         </a>
     """)
     _send(employee.email, "Your goal sheet has been approved", html)
+    _send_teams_card(
+        title=f"✅ Goal Sheet Approved — {cycle_label}",
+        message=f"Your goal sheet for **{cycle_label}** has been approved. Your goals are now locked and active. You can start logging achievements when check-in windows open.",
+        deep_link_url=f"{settings.FRONTEND_URL}/employee",
+        button_label="View My Goals"
+    )
 
 
 def notify_sheet_returned(employee: User, reason: str, cycle_label: str):
@@ -111,6 +191,12 @@ def notify_sheet_returned(employee: User, reason: str, cycle_label: str):
         </a>
     """)
     _send(employee.email, "Your goal sheet needs revision", html)
+    _send_teams_card(
+        title=f"↩️ Goal Sheet Returned for Revision",
+        message=f"Your goal sheet for **{cycle_label}** has been returned. Manager feedback: _{reason}_. Please revise and resubmit.",
+        deep_link_url=f"{settings.FRONTEND_URL}/employee",
+        button_label="Revise Goals"
+    )
 
 
 def notify_checkin_reminder(employee: User, quarter: str, days_remaining: int):

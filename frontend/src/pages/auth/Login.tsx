@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/auth'
 import { Eye, EyeOff, ArrowRight, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { PublicClientApplication } from '@azure/msal-browser'
+
+const AZURE_CLIENT_ID = import.meta.env.VITE_AZURE_CLIENT_ID || ''
+const AZURE_TENANT_ID = import.meta.env.VITE_AZURE_TENANT_ID || ''
+
+const msalInstance = AZURE_CLIENT_ID ? new PublicClientApplication({
+  auth: {
+    clientId: AZURE_CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${AZURE_TENANT_ID}`,
+    redirectUri: window.location.origin,
+  },
+  cache: { cacheLocation: 'sessionStorage' },
+}) : null
 
 const DEMOS = [
   { role: 'Employee', email: 'employee@demo.com', password: 'Employee@123', icon: '👤', color: '#10b981', light: '#ecfdf5', desc: 'Set goals · log actuals · view progress' },
@@ -22,6 +35,30 @@ export default function Login() {
     const demo = DEMOS.find(d => d.role.toLowerCase() === (role || '').toLowerCase())
     if (demo) doLogin(demo.email, demo.password, demo.role)
   }, []) // eslint-disable-line
+
+  const doAzureLogin = async () => {
+    if (!msalInstance) {
+      toast.error('Azure SSO is not configured on this instance.')
+      return
+    }
+    setLoading('azure')
+    try {
+      await msalInstance.initialize()
+      const result = await msalInstance.loginPopup({
+        scopes: ['openid', 'profile', 'email'],
+      })
+      const idToken = result.idToken
+      const { loginWithAzure } = useAuthStore.getState()
+      await loginWithAzure(idToken)
+      const role = useAuthStore.getState().user?.role
+      if (!role) throw new Error('Could not determine role')
+      toast.success(`Signed in via Microsoft as ${role}`)
+      window.location.href = `/${role}`
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || err.message || 'Microsoft sign-in failed')
+      setLoading(null)
+    }
+  }
 
   const doLogin = async (e: string, p: string, tag: string) => {
     setLoading(tag)
@@ -130,6 +167,38 @@ export default function Login() {
               )}
             </button>
           </div>
+
+          {/* Microsoft SSO button */}
+          <button
+            onClick={doAzureLogin}
+            disabled={loading !== null}
+            style={{
+              width: '100%', padding: '12px', background: 'white', color: '#0f172a',
+              border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '14px',
+              fontWeight: 600, cursor: loading !== null ? 'not-allowed' : 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+              marginBottom: '20px', marginTop: '10px',
+              boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.15s',
+              opacity: loading !== null && loading !== 'azure' ? 0.6 : 1,
+            }}
+            onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLElement).style.borderColor = '#0078d4' }}
+            onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}
+          >
+            {loading === 'azure' ? (
+              <><span style={{ width: '16px', height: '16px', border: '2px solid #0078d430', borderTopColor: '#0078d4', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Signing in…</>
+            ) : (
+              <>
+                {/* Microsoft logo SVG */}
+                <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+                Sign in with Microsoft
+              </>
+            )}
+          </button>
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
