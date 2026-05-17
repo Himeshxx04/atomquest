@@ -18,6 +18,7 @@ from app.models.goal import (
     GoalSheet, Goal, ThrustArea, Cycle, CyclePhase,
     SheetStatus, UoMType, GoalStatus, QuarterlyActual, CheckinComment
 )
+from sqlalchemy import text
 from datetime import date, datetime, timezone
 
 
@@ -67,6 +68,8 @@ def run():
         def clear_sheet(user_id, cycle_id):
             old = db.query(GoalSheet).filter_by(employee_id=user_id, cycle_id=cycle_id).first()
             if old:
+                # Delete checkin_comments first (no cascade on the relationship)
+                db.query(CheckinComment).filter_by(goal_sheet_id=old.id).delete()
                 db.delete(old)
                 db.flush()
 
