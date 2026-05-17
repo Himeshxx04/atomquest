@@ -95,20 +95,18 @@ def seed():
                 print(f"  ✓ Thrust area: {name}")
 
         # ── Cycles ──────────────────────────────────────────────────────────
-        existing_cycles = {
-            (c.year, c.phase) for c in db.query(Cycle.year, Cycle.phase).all()
-        }
+        # Delete old 2025 cycles and recreate as 2026
+        db.query(Cycle).filter(Cycle.year == 2025).delete()
         cycles = [
-            (2025, CyclePhase.GOAL_SETTING, date(2025, 5, 1),  date(2025, 6, 30),  True),
-            (2025, CyclePhase.Q1,           date(2025, 7, 1),  date(2025, 7, 31),  False),
-            (2025, CyclePhase.Q2,           date(2025, 10, 1), date(2025, 10, 31), False),
-            (2025, CyclePhase.Q3,           date(2026, 1, 1),  date(2026, 1, 31),  False),
-            (2025, CyclePhase.Q4,           date(2026, 3, 1),  date(2026, 4, 30),  False),
+            (2026, CyclePhase.GOAL_SETTING, date(2026, 4, 1),  date(2026, 6, 30),  True),
+            (2026, CyclePhase.Q1,           date(2026, 7, 1),  date(2026, 7, 31),  False),
+            (2026, CyclePhase.Q2,           date(2026, 10, 1), date(2026, 10, 31), False),
+            (2026, CyclePhase.Q3,           date(2027, 1, 1),  date(2027, 1, 31),  False),
+            (2026, CyclePhase.Q4,           date(2027, 3, 1),  date(2027, 4, 30),  False),
         ]
         for year, phase, w_open, w_close, active in cycles:
-            if (year, phase) not in existing_cycles:
-                db.add(Cycle(year=year, phase=phase, window_open=w_open, window_close=w_close, is_active=active))
-                print(f"  ✓ Cycle: {year} {phase.value}")
+            db.add(Cycle(year=year, phase=phase, window_open=w_open, window_close=w_close, is_active=active))
+            print(f"  ✓ Cycle: {year} {phase.value}")
 
         # ── Escalation Rules ────────────────────────────────────────────────
         existing_rules = {r.trigger_type for r in db.query(EscalationRule.trigger_type).all()}

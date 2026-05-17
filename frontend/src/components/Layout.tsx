@@ -108,7 +108,8 @@ export default function Layout({ children }: LayoutProps) {
           })}
         </nav>
 
-        {/* Demo role switcher */}
+        {/* Demo role switcher — only shown for demo accounts */}
+        {user?.email?.endsWith('@demo.com') && (
         <div style={{ padding: '0 16px 12px' }}>
           <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <p style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Demo Role</p>
@@ -133,6 +134,7 @@ export default function Layout({ children }: LayoutProps) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Sign out */}
         <div style={{ padding: '0 16px 20px' }}>
