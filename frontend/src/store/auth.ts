@@ -16,7 +16,7 @@ interface AuthState {
   token: string | null
   user: User | null
   login: (email: string, password: string) => Promise<void>
-  loginWithAzure: (idToken: string) => Promise<void>
+  loginWithAzure: (idToken: string, accessToken?: string) => Promise<void>
   demoSwitch: (role: 'employee' | 'manager' | 'admin') => Promise<void>
   logout: () => void
   fetchMe: () => Promise<void>
@@ -35,8 +35,8 @@ export const useAuthStore = create<AuthState>()(
         set({ token: data.access_token, user: data.user })
       },
 
-      loginWithAzure: async (idToken: string) => {
-        const { data } = await api.post('/auth/azure', { id_token: idToken })
+      loginWithAzure: async (idToken: string, accessToken?: string) => {
+        const { data } = await api.post('/auth/azure', { id_token: idToken, access_token: accessToken })
         localStorage.setItem('token', data.access_token)
         set({ token: data.access_token, user: data.user })
       },

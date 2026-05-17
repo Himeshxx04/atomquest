@@ -38,24 +38,28 @@ export default function Login() {
 
   const doAzureLogin = async () => {
     if (!msalInstance) {
-      toast.error('Azure SSO is not configured on this instance.')
+      // SSO not configured — shown as greyed button, this shouldn't fire
       return
     }
     setLoading('azure')
     try {
       await msalInstance.initialize()
       const result = await msalInstance.loginPopup({
-        scopes: ['openid', 'profile', 'email'],
+        scopes: ['openid', 'profile', 'email', 'User.Read'],
       })
       const idToken = result.idToken
+      const accessToken = result.accessToken
       const { loginWithAzure } = useAuthStore.getState()
-      await loginWithAzure(idToken)
+      await loginWithAzure(idToken, accessToken)
       const role = useAuthStore.getState().user?.role
       if (!role) throw new Error('Could not determine role')
       toast.success(`Signed in via Microsoft as ${role}`)
       window.location.href = `/${role}`
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || err.message || 'Microsoft sign-in failed')
+      const msg = err?.response?.data?.detail || err?.message || 'Microsoft sign-in failed'
+      if (!msg.includes('user_cancelled') && !msg.includes('popup_window_error')) {
+        toast.error(msg)
+      }
       setLoading(null)
     }
   }
@@ -169,36 +173,40 @@ export default function Login() {
           </div>
 
           {/* Microsoft SSO button */}
-          <button
-            onClick={doAzureLogin}
-            disabled={loading !== null}
-            style={{
-              width: '100%', padding: '12px', background: 'white', color: '#0f172a',
-              border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '14px',
-              fontWeight: 600, cursor: loading !== null ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              marginBottom: '20px', marginTop: '10px',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)', transition: 'all 0.15s',
-              opacity: loading !== null && loading !== 'azure' ? 0.6 : 1,
-            }}
-            onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLElement).style.borderColor = '#0078d4' }}
-            onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}
-          >
-            {loading === 'azure' ? (
-              <><span style={{ width: '16px', height: '16px', border: '2px solid #0078d430', borderTopColor: '#0078d4', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Signing in…</>
-            ) : (
-              <>
-                {/* Microsoft logo SVG */}
-                <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
-                  <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
-                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
-                  <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
-                </svg>
-                Sign in with Microsoft
-              </>
-            )}
-          </button>
+          <div style={{ position: 'relative', marginBottom: '20px', marginTop: '10px' }}>
+            <button
+              onClick={doAzureLogin}
+              disabled={loading !== null || !msalInstance}
+              title={!msalInstance ? 'Azure AD SSO — requires enterprise configuration (VITE_AZURE_CLIENT_ID)' : 'Sign in with your Microsoft work account'}
+              style={{
+                width: '100%', padding: '12px', background: msalInstance ? 'white' : '#f8fafc',
+                color: msalInstance ? '#0f172a' : '#94a3b8',
+                border: `1.5px solid ${msalInstance ? '#e2e8f0' : '#f1f5f9'}`,
+                borderRadius: '12px', fontSize: '14px', fontWeight: 600,
+                cursor: (!msalInstance || loading !== null) ? 'not-allowed' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                boxShadow: msalInstance ? '0 1px 4px rgba(0,0,0,0.06)' : 'none',
+                transition: 'all 0.15s',
+                opacity: (loading !== null && loading !== 'azure') ? 0.6 : 1,
+              }}
+              onMouseEnter={(e) => { if (msalInstance && !loading) (e.currentTarget as HTMLElement).style.borderColor = '#0078d4' }}
+              onMouseLeave={(e) => { if (msalInstance && !loading) (e.currentTarget as HTMLElement).style.borderColor = '#e2e8f0' }}
+            >
+              {loading === 'azure' ? (
+                <><span style={{ width: '16px', height: '16px', border: '2px solid #0078d430', borderTopColor: '#0078d4', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.7s linear infinite' }} /> Signing in…</>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg" style={{ opacity: msalInstance ? 1 : 0.4 }}>
+                    <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                    <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                    <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                  </svg>
+                  Sign in with Microsoft {!msalInstance && <span style={{ fontSize: '11px', color: '#cbd5e1' }}>(enterprise)</span>}
+                </>
+              )}
+            </button>
+          </div>
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>

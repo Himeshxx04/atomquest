@@ -52,6 +52,7 @@ class TokenResponse(BaseModel):
 
 class AzureLoginRequest(BaseModel):
     id_token: str
+    access_token: Optional[str] = None  # Graph API token for org hierarchy + group sync
 
 
 class DemoSwitchRequest(BaseModel):

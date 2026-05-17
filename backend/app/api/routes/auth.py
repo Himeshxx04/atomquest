@@ -18,7 +18,7 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/azure", response_model=TokenResponse)
 def azure_login(body: AzureLoginRequest, db: Session = Depends(get_db)):
     """SSO via Microsoft Entra ID — accepts the id_token from MSAL on the frontend."""
-    user = auth_service.login_via_azure(body.id_token, db)
+    user = auth_service.login_via_azure(body.id_token, db, access_token=body.access_token)
     token = auth_service.issue_token(user)
     return TokenResponse(access_token=token, user=UserRead.model_validate(user))
 
