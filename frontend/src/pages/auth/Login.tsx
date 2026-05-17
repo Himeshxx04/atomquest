@@ -5,7 +5,6 @@ import toast from 'react-hot-toast'
 import { PublicClientApplication } from '@azure/msal-browser'
 
 const AZURE_CLIENT_ID = import.meta.env.VITE_AZURE_CLIENT_ID || ''
-const AZURE_TENANT_ID = import.meta.env.VITE_AZURE_TENANT_ID || ''
 
 const msalInstance = AZURE_CLIENT_ID ? new PublicClientApplication({
   auth: {
