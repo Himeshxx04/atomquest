@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>GoalFlow — Architecture Diagram</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; }
+
+  h1 { text-align: center; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .subtitle { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 36px; }
+
+  .diagram { display: flex; flex-direction: column; gap: 16px; max-width: 1200px; margin: 0 auto; }
+
+  /* ── Layers ── */
+  .layer { border-radius: 14px; padding: 20px 24px; border: 1px solid; position: relative; }
+  .layer-label {
+    position: absolute; top: -11px; left: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 2px 10px; border-radius: 100px;
+  }
+
+  .layer-client   { background: #1e293b; border-color: #334155; }
+  .layer-client .layer-label { background: #334155; color: #94a3b8; }
+
+  .layer-frontend { background: #0c1a3a; border-color: #1d4ed8; }
+  .layer-frontend .layer-label { background: #1d4ed8; color: #fff; }
+
+  .layer-backend  { background: #0f2318; border-color: #16a34a; }
+  .layer-backend .layer-label { background: #16a34a; color: #fff; }
+
+  .layer-data     { background: #1a0f2e; border-color: #7c3aed; }
+  .layer-data .layer-label { background: #7c3aed; color: #fff; }
+
+  .layer-external { background: #1a1200; border-color: #ca8a04; }
+  .layer-external .layer-label { background: #ca8a04; color: #000; }
+
+  /* ── Row inside a layer ── */
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+
+  /* ── Boxes ── */
+  .box {
+    border-radius: 10px; padding: 12px 16px; flex: 1; min-width: 140px;
+    border: 1px solid; font-size: 12px;
+  }
+  .box-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .box-items { list-style: none; color: #94a3b8; line-height: 1.8; font-size: 11.5px; }
+  .box-items li::before { content: '→ '; color: #475569; }
+
+  /* color variants */
+  .box-blue   { background: #172554; border-color: #3b82f6; }
+  .box-blue .box-title { color: #60a5fa; }
+  .box-green  { background: #052e16; border-color: #22c55e; }
+  .box-green .box-title { color: #4ade80; }
+  .box-purple { background: #2e1065; border-color: #a855f7; }
+  .box-purple .box-title { color: #c084fc; }
+  .box-yellow { background: #1c1200; border-color: #eab308; }
+  .box-yellow .box-title { color: #facc15; }
+  .box-red    { background: #2d0a0a; border-color: #ef4444; }
+  .box-red .box-title { color: #f87171; }
+  .box-slate  { background: #1e293b; border-color: #475569; }
+  .box-slate .box-title { color: #94a3b8; }
+  .box-orange { background: #1c0a00; border-color: #f97316; }
+  .box-orange .box-title { color: #fb923c; }
+  .box-teal   { background: #042f2e; border-color: #14b8a6; }
+  .box-teal .box-title { color: #2dd4bf; }
+
+  /* ── Arrow connectors ── */
+  .arrow-row {
+    display: flex; justify-content: center; align-items: center;
+    gap: 0; margin: -4px 0;
+  }
+  .arrow-group { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; max-width: 260px; }
+  .arrow-label { font-size: 10px; color: #475569; text-align: center; white-space: nowrap; }
+  .arrow-line  { width: 2px; height: 28px; background: #334155; margin: 0 auto; }
+  .arrow-head  { width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid #334155; margin: 0 auto; }
+
+  .arrow-h { /* horizontal arrow */
+    display: flex; align-items: center; gap: 4px; padding: 0 8px;
+  }
+  .arrow-h-line { flex: 1; height: 2px; background: #334155; }
+  .arrow-h-head { width: 0; height: 0; border-top: 5px solid transparent; border-bottom: 5px solid transparent; border-left: 7px solid #334155; }
+
+  /* flow annotation badges */
+  .badge {
+    display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 7px;
+    border-radius: 100px; margin-left: 4px; vertical-align: middle;
+  }
+  .badge-blue   { background: #1d4ed830; color: #60a5fa; border: 1px solid #1d4ed8; }
+  .badge-green  { background: #16a34a30; color: #4ade80; border: 1px solid #16a34a; }
+  .badge-yellow { background: #ca8a0430; color: #facc15; border: 1px solid #ca8a04; }
+  .badge-purple { background: #7c3aed30; color: #c084fc; border: 1px solid #7c3aed; }
+
+  /* ── Flow section ── */
+  .flows { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+  .flow-card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 14px 16px; }
+  .flow-card h3 { font-size: 12px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .flow-step { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; font-size: 11.5px; color: #cbd5e1; line-height: 1.5; }
+  .step-num { background: #334155; color: #94a3b8; font-size: 10px; font-weight: 700; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+
+  .divider { height: 1px; background: #1e293b; margin: 8px 0; }
+
+  .tech-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tech { font-size: 10px; padding: 3px 8px; border-radius: 6px; background: #1e293b; border: 1px solid #334155; color: #64748b; }
+
+  footer { text-align: center; margin-top: 32px; font-size: 11px; color: #334155; }
+</style>
+</head>
+<body>
+
+<h1>GoalFlow — System Architecture</h1>
+<p class="subtitle">AtomQuest Hackathon 1.0 &nbsp;·&nbsp; FastAPI + React + PostgreSQL + Azure AD SSO + SendGrid</p>
+
+<div class="diagram">
+
+  <!-- ── CLIENT BROWSER ── -->
+  <div class="layer layer-client">
+    <span class="layer-label">Client Browser</span>
+    <div class="row">
+      <div class="box box-slate" style="flex:0 0 auto;min-width:200px;">
+        <div class="box-title">MSAL (Azure SSO)</div>
+        <ul class="box-items">
+          <li>@azure/msal-browser v5</li>
+          <li>loginRedirect() flow</li>
+          <li>prompt: select_account</li>
+          <li>Redirects to /login on return</li>
+          <li>handleRedirectPromise()</li>
+          <li>sessionStorage cache</li>
+        </ul>
+      </div>
+      <div class="box box-slate" style="flex:1;">
+        <div class="box-title">State Management</div>
+        <ul class="box-items">
+          <li>Zustand + persist middleware</li>
+          <li>Persists: token + user to localStorage</li>
+          <li>Auth store: login / loginWithAzure / demoSwitch / logout</li>
+          <li>React Router v6 — protected routes per role</li>
+        </ul>
+      </div>
+      <div class="box box-slate" style="flex:1;">
+        <div class="box-title">HTTP Client</div>
+        <ul class="box-items">
+          <li>Axios instance (lib/api.ts)</li>
+          <li>Base URL: VITE_API_URL (env)</li>
+          <li>Auto-inject Bearer token from localStorage</li>
+          <li>401 interceptor → logout + /login redirect</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow-row">
+    <div class="arrow-group">
+      <div class="arrow-label">REST/JSON over HTTPS &nbsp;<span class="badge badge-blue">JWT Bearer</span></div>
+      <div class="arrow-line"></div><div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── FRONTEND ── -->
+  <div class="layer layer-frontend">
+    <span class="layer-label">Frontend — React 18 + TypeScript + Vite</span>
+    <div class="row">
+
+      <div class="box box-blue">
+        <div class="box-title">Auth Pages</div>
+        <ul class="box-items">
+          <li>Login (email+password / Azure SSO)</li>
+          <li>AuthRedirect (/auth-redirect route)</li>
+          <li>Demo switch: employee / manager / admin</li>
+          <li>Dev shortcut: ?as=role</li>
+        </ul>
+      </div>
+
+      <div class="box box-blue">
+        <div class="box-title">Employee Dashboard</div>
+        <ul class="box-items">
+          <li>View / draft goal sheet per cycle</li>
+          <li>Add / edit / delete goals (draft only)</li>
+          <li>Weightage validator (10%–100% total)</li>
+          <li>Submit sheet to manager</li>
+          <li>Log quarterly actuals (Q1–Q4)</li>
+          <li>View locked goals post-approval</li>
+          <li>View return reason + re-edit</li>
+        </ul>
+      </div>
+
+      <div class="box box-blue">
+        <div class="box-title">Manager Dashboard</div>
+        <ul class="box-items">
+          <li>View all direct reports' sheets</li>
+          <li>Inline edit: targets + weightage</li>
+          <li>Approve sheet → locks all goals</li>
+          <li>Return with reason → unlocks goals</li>
+          <li>Quarterly check-in comments</li>
+          <li>Manager Analytics (team QoQ trends)</li>
+        </ul>
+      </div>
+
+      <div class="box box-blue">
+        <div class="box-title">Admin Dashboard</div>
+        <ul class="box-items">
+          <li>Cycle management (create/edit phases)</li>
+          <li>User management + org hierarchy</li>
+          <li>Completion dashboard (real-time)</li>
+          <li>Unlock individual goals</li>
+          <li>Push shared/departmental KPIs</li>
+          <li>Export: CSV + Excel achievement reports</li>
+          <li>Audit log viewer</li>
+          <li>Escalation event viewer</li>
+          <li>Full analytics suite</li>
+        </ul>
+      </div>
+
+      <div class="box box-blue">
+        <div class="box-title">Analytics Module</div>
+        <ul class="box-items">
+          <li>QoQ trend lines (individual + team)</li>
+          <li>Heatmap: dept × quarter completion</li>
+          <li>Goal distribution (thrust area + UoM)</li>
+          <li>Manager effectiveness dashboard</li>
+          <li>Recharts visualisation library</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow-row">
+    <div class="arrow-group">
+      <div class="arrow-label">FastAPI REST API &nbsp;<span class="badge badge-green">role-gated endpoints</span></div>
+      <div class="arrow-line"></div><div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── BACKEND ── -->
+  <div class="layer layer-backend">
+    <span class="layer-label">Backend — FastAPI + Python + SQLAlchemy ORM</span>
+    <div class="row">
+
+      <div class="box box-green">
+        <div class="box-title">/auth</div>
+        <ul class="box-items">
+          <li>POST /login — email + password</li>
+          <li>POST /azure — Azure id_token + access_token</li>
+          <li>POST /demo-switch — role (dev only)</li>
+          <li>GET /me — current user from JWT</li>
+          <li>Issues HS256 JWT (480 min expiry)</li>
+        </ul>
+      </div>
+
+      <div class="box box-green">
+        <div class="box-title">/goals</div>
+        <ul class="box-items">
+          <li>CRUD: goal sheets + goals</li>
+          <li>BRD: max 8 goals, 10% min, 100% total</li>
+          <li>Submit / approve / return flow</li>
+          <li>Lock / unlock per-goal</li>
+          <li>Quarterly actuals (Q1–Q4)</li>
+          <li>Check-in comments (manager)</li>
+          <li>Shared goal push + weightage adjust</li>
+          <li>Thrust areas + cycles reference data</li>
+        </ul>
+      </div>
+
+      <div class="box box-green">
+        <div class="box-title">/admin</div>
+        <ul class="box-items">
+          <li>User CRUD + org hierarchy</li>
+          <li>Cycle management (phases + windows)</li>
+          <li>Completion dashboard</li>
+          <li>Audit log retrieval</li>
+          <li>Escalation event viewer</li>
+          <li>Reports: CSV + Excel (openpyxl)</li>
+          <li>Unlock goals (exception handling)</li>
+        </ul>
+      </div>
+
+      <div class="box box-green">
+        <div class="box-title">/analytics</div>
+        <ul class="box-items">
+          <li>QoQ trend (individual + dept)</li>
+          <li>Completion heatmap</li>
+          <li>Goal distribution by thrust + UoM</li>
+          <li>Manager effectiveness scores</li>
+          <li>Min/Max/Timeline/Zero score formulas</li>
+        </ul>
+      </div>
+
+      <div class="box box-teal">
+        <div class="box-title">Cross-Cutting Concerns</div>
+        <ul class="box-items">
+          <li>JWT auth middleware (get_current_user)</li>
+          <li>Role-based guards (require_role)</li>
+          <li>CORS — configured for frontend origin</li>
+          <li>Pydantic v2 schema validation</li>
+          <li>Alembic DB migrations</li>
+          <li>Seed script (demo users + thrust areas)</li>
+        </ul>
+      </div>
+
+      <div class="box box-teal">
+        <div class="box-title">APScheduler — Escalation Engine</div>
+        <ul class="box-items">
+          <li>Runs every 6 hours (background)</li>
+          <li>Rule: employee not submitted in N days</li>
+          <li>Rule: manager not approved in N days</li>
+          <li>Rule: check-in not completed in window</li>
+          <li>Configurable EscalationRule records</li>
+          <li>notify_chain: employee → manager → HR</li>
+          <li>EscalationEvent log (resolved / open)</li>
+          <li>Triggers email on breach</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow-row">
+    <div class="arrow-group">
+      <div class="arrow-label">SQLAlchemy ORM &nbsp;<span class="badge badge-purple">PostgreSQL</span></div>
+      <div class="arrow-line"></div><div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── DATA LAYER ── -->
+  <div class="layer layer-data">
+    <span class="layer-label">Data Layer — PostgreSQL</span>
+    <div class="row">
+
+      <div class="box box-purple">
+        <div class="box-title">Users</div>
+        <ul class="box-items">
+          <li>id, name, email, role</li>
+          <li>hashed_password (null for SSO)</li>
+          <li>azure_oid (unique — SSO identity)</li>
+          <li>manager_id (self-referential FK)</li>
+          <li>department, is_active</li>
+        </ul>
+      </div>
+
+      <div class="box box-purple">
+        <div class="box-title">Goal Sheets + Goals</div>
+        <ul class="box-items">
+          <li>GoalSheet: employee_id, cycle_id, status</li>
+          <li>status: draft/submitted/approved/returned</li>
+          <li>return_reason, approved_by</li>
+          <li>Goal: title, thrust_area, uom_type</li>
+          <li>target_numeric / target_date</li>
+          <li>weightage, is_locked, is_shared</li>
+        </ul>
+      </div>
+
+      <div class="box box-purple">
+        <div class="box-title">Actuals + Check-ins</div>
+        <ul class="box-items">
+          <li>QuarterlyActual: goal_id, quarter</li>
+          <li>actual_numeric, actual_date, status</li>
+          <li>status: not_started/on_track/completed</li>
+          <li>CheckinComment: sheet_id, manager_id</li>
+          <li>quarter, comment, created_at</li>
+        </ul>
+      </div>
+
+      <div class="box box-purple">
+        <div class="box-title">Shared Goals</div>
+        <ul class="box-items">
+          <li>SharedGoal: primary_owner_id</li>
+          <li>recipient_goal_id (FK → Goal)</li>
+          <li>Employees adjust weightage only</li>
+          <li>Title/target read-only for recipients</li>
+        </ul>
+      </div>
+
+      <div class="box box-purple">
+        <div class="box-title">Reference Data</div>
+        <ul class="box-items">
+          <li>ThrustArea: name, is_active</li>
+          <li>Cycle: year, phase, window_open/close</li>
+          <li>Phases: goal_setting/Q1/Q2/Q3/Q4</li>
+        </ul>
+      </div>
+
+      <div class="box box-purple">
+        <div class="box-title">Escalations + Audit</div>
+        <ul class="box-items">
+          <li>EscalationRule: trigger_type, threshold_days</li>
+          <li>notify_chain, is_active</li>
+          <li>EscalationEvent: triggered_at, level</li>
+          <li>is_resolved, resolution note</li>
+          <li>AuditLog: entity, action, changed_by</li>
+          <li>old_value, new_value, changed_at</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- arrow -->
+  <div class="arrow-row">
+    <div class="arrow-group">
+      <div class="arrow-label">External API calls &nbsp;<span class="badge badge-yellow">HTTPS</span></div>
+      <div class="arrow-line"></div><div class="arrow-head"></div>
+    </div>
+  </div>
+
+  <!-- ── EXTERNAL SERVICES ── -->
+  <div class="layer layer-external">
+    <span class="layer-label">External Services</span>
+    <div class="row">
+
+      <div class="box box-yellow">
+        <div class="box-title">Microsoft Entra ID (Azure AD)</div>
+        <ul class="box-items">
+          <li>App Registration: GoalFlow Portal</li>
+          <li>Tenant: single-org + personal accounts</li>
+          <li>OIDC loginRedirect flow via MSAL</li>
+          <li>id_token: oid, preferred_username, name</li>
+          <li>Audience validated against CLIENT_ID</li>
+          <li>AZURE_ADMIN_EMAILS → force admin role</li>
+        </ul>
+      </div>
+
+      <div class="box box-yellow">
+        <div class="box-title">Microsoft Graph API</div>
+        <ul class="box-items">
+          <li>GET /me/manager → org hierarchy sync</li>
+          <li>GET /me/memberOf → group membership</li>
+          <li>Group → role mapping:</li>
+          <li>&nbsp;&nbsp;admin/hr → admin role</li>
+          <li>&nbsp;&nbsp;manager/lead/supervisor → manager</li>
+          <li>&nbsp;&nbsp;else → employee (default)</li>
+          <li>Called on every SSO login</li>
+        </ul>
+      </div>
+
+      <div class="box box-orange">
+        <div class="box-title">SendGrid Email API</div>
+        <ul class="box-items">
+          <li>Goal submitted → manager notified</li>
+          <li>Goal approved → employee notified</li>
+          <li>Goal returned → employee + reason</li>
+          <li>Escalation breach → chain notified</li>
+          <li>HTML email templates</li>
+          <li>FROM_EMAIL configurable in .env</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── KEY FLOWS ── -->
+  <div class="flows">
+
+    <div class="flow-card">
+      <h3>🔐 Azure SSO Login Flow</h3>
+      <div class="flow-step"><div class="step-num">1</div> User clicks "Sign in with Microsoft"</div>
+      <div class="flow-step"><div class="step-num">2</div> MSAL loginRedirect() → Microsoft Entra ID (prompt: select_account)</div>
+      <div class="flow-step"><div class="step-num">3</div> User authenticates at login.microsoftonline.com</div>
+      <div class="flow-step"><div class="step-num">4</div> Microsoft redirects to localhost:5173/login with auth code</div>
+      <div class="flow-step"><div class="step-num">5</div> handleRedirectPromise() exchanges code → id_token + access_token</div>
+      <div class="flow-step"><div class="step-num">6</div> POST /auth/azure with id_token + access_token</div>
+      <div class="flow-step"><div class="step-num">7</div> Backend decodes JWT, calls Graph API for manager + groups</div>
+      <div class="flow-step"><div class="step-num">8</div> Upsert user, sync role from AD groups, issue internal JWT</div>
+      <div class="flow-step"><div class="step-num">9</div> Frontend redirects to /{role} dashboard</div>
+    </div>
+
+    <div class="flow-card">
+      <h3>🎯 Goal Creation → Approval Flow</h3>
+      <div class="flow-step"><div class="step-num">1</div> Employee creates goal sheet (DRAFT) for active cycle</div>
+      <div class="flow-step"><div class="step-num">2</div> Adds goals: ≥10% each, ≤8 goals, must total 100%</div>
+      <div class="flow-step"><div class="step-num">3</div> Employee submits → status: SUBMITTED, goals editable</div>
+      <div class="flow-step"><div class="step-num">4</div> SendGrid email → manager notified</div>
+      <div class="flow-step"><div class="step-num">5</div> Manager reviews, optionally inline-edits targets/weightage</div>
+      <div class="flow-step"><div class="step-num">6a</div> Approve → status: APPROVED, all goals is_locked=True</div>
+      <div class="flow-step"><div class="step-num">6b</div> Return → status: RETURNED, goals unlocked, reason stored</div>
+      <div class="flow-step"><div class="step-num">7</div> SendGrid email → employee notified of outcome</div>
+    </div>
+
+    <div class="flow-card">
+      <h3>📊 Quarterly Check-in Flow</h3>
+      <div class="flow-step"><div class="step-num">1</div> Cycle window opens (Q1/Q2/Q3/Q4)</div>
+      <div class="flow-step"><div class="step-num">2</div> Employee logs actuals: actual_numeric/date + status per goal</div>
+      <div class="flow-step"><div class="step-num">3</div> Score computed: Min=actual÷target, Max=target÷actual, Zero=1 if 0</div>
+      <div class="flow-step"><div class="step-num">4</div> Manager views planned vs actual across team</div>
+      <div class="flow-step"><div class="step-num">5</div> Manager adds check-in comment (structured feedback)</div>
+      <div class="flow-step"><div class="step-num">6</div> Analytics: QoQ trends, heatmaps updated in real-time</div>
+    </div>
+
+    <div class="flow-card">
+      <h3>⚠️ Escalation Engine Flow</h3>
+      <div class="flow-step"><div class="step-num">1</div> APScheduler triggers run_all_checks() every 6 hours</div>
+      <div class="flow-step"><div class="step-num">2</div> Check: employee not submitted within threshold_days</div>
+      <div class="flow-step"><div class="step-num">3</div> Check: manager not approved within threshold_days</div>
+      <div class="flow-step"><div class="step-num">4</div> Check: check-in not completed within window</div>
+      <div class="flow-step"><div class="step-num">5</div> On breach: create EscalationEvent record</div>
+      <div class="flow-step"><div class="step-num">6</div> Walk notify_chain (employee → manager → HR)</div>
+      <div class="flow-step"><div class="step-num">7</div> Send email via SendGrid per chain member</div>
+      <div class="flow-step"><div class="step-num">8</div> Admin sees open/resolved events in dashboard</div>
+    </div>
+
+  </div>
+
+  <!-- tech stack row -->
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:14px 18px;margin-top:4px;">
+    <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Full Technology Stack</div>
+    <div class="tech-row">
+      <span class="tech">React 18</span>
+      <span class="tech">TypeScript</span>
+      <span class="tech">Vite</span>
+      <span class="tech">React Router v6</span>
+      <span class="tech">Zustand</span>
+      <span class="tech">Axios</span>
+      <span class="tech">Recharts</span>
+      <span class="tech">Lucide Icons</span>
+      <span class="tech">react-hot-toast</span>
+      <span class="tech">@azure/msal-browser v5</span>
+      <span class="tech">FastAPI</span>
+      <span class="tech">Python 3.11+</span>
+      <span class="tech">SQLAlchemy 2.0</span>
+      <span class="tech">Pydantic v2</span>
+      <span class="tech">Alembic</span>
+      <span class="tech">APScheduler</span>
+      <span class="tech">openpyxl</span>
+      <span class="tech">python-jose (JWT)</span>
+      <span class="tech">passlib (bcrypt)</span>
+      <span class="tech">PostgreSQL 15</span>
+      <span class="tech">Microsoft Entra ID</span>
+      <span class="tech">Microsoft Graph API</span>
+      <span class="tech">SendGrid API</span>
+      <span class="tech">uvicorn</span>
+    </div>
+  </div>
+
+</div>
+
+<footer>GoalFlow · AtomQuest Hackathon 1.0 · Architecture Diagram</footer>
+
+</body>
+</html>

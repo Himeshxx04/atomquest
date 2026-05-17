@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Signing in…</title>
+  <style>
+    body { margin: 0; display: flex; align-items: center; justify-content: center;
+           min-height: 100vh; font-family: system-ui, sans-serif; background: #f8fafc; color: #64748b; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div>Signing in with Microsoft…</div>
+  <script type="module">
+    // This page is the OAuth redirect target for the MSAL popup flow.
+    // It loads MSAL, calls handleRedirectPromise() which reads the auth code
+    // from the URL, and posts the result back to the parent window via postMessage.
+    // The parent's loginPopup() promise then resolves automatically.
+    import { PublicClientApplication } from 'https://cdn.jsdelivr.net/npm/@azure/msal-browser@5.10.1/+esm';
+
+    const AZURE_CLIENT_ID = '1bb2355c-4971-4807-9ea4-071af51e2f0d';
+    const AZURE_TENANT_ID = '119746e7-e011-43e3-918f-7396aacd0e2a';
+
+    try {
+      const pca = new PublicClientApplication({
+        auth: {
+          clientId: AZURE_CLIENT_ID,
+          authority: `https://login.microsoftonline.com/${AZURE_TENANT_ID}`,
+          redirectUri: `${window.location.origin}/auth-redirect.html`,
+        },
+        cache: { cacheLocation: 'sessionStorage' },
+      });
+      await pca.initialize();
+      await pca.handleRedirectPromise();
+    } catch (e) {
+      console.error('[auth-redirect] MSAL error:', e);
+    }
+  </script>
+</body>
+</html>

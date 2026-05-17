@@ -10,11 +10,19 @@ const AZURE_TENANT_ID = import.meta.env.VITE_AZURE_TENANT_ID || ''
 const msalInstance = AZURE_CLIENT_ID ? new PublicClientApplication({
   auth: {
     clientId: AZURE_CLIENT_ID,
-    authority: `https://login.microsoftonline.com/${AZURE_TENANT_ID}`,
-    redirectUri: window.location.origin,
+    authority: `https://login.microsoftonline.com/common`,  // accepts any Microsoft/personal account
+    // Send the auth code directly back to /login.
+    // sessionStorage survives same-tab navigation (not popup), so MSAL
+    // finds the PKCE verifier when /login reloads after Microsoft redirects back.
+    redirectUri: `${window.location.origin}/login`,
   },
   cache: { cacheLocation: 'sessionStorage' },
 }) : null
+
+// Initialize MSAL exactly once at module level.
+const msalReady: Promise<void> = msalInstance
+  ? msalInstance.initialize()
+  : Promise.resolve()
 
 const DEMOS = [
   { role: 'Employee', email: 'employee@demo.com', password: 'Employee@123', icon: '👤', color: '#10b981', light: '#ecfdf5', desc: 'Set goals · log actuals · view progress' },
@@ -29,37 +37,46 @@ export default function Login() {
   const [loading, setLoading] = useState<string | null>(null)
   const { login } = useAuthStore()
 
-  // Dev shortcut: /login?as=admin  /login?as=manager  /login?as=employee
   useEffect(() => {
+    // Handle Microsoft redirect response — runs when /login reloads after OAuth redirect
+    if (msalInstance) {
+      msalReady.then(async () => {
+        const result = await msalInstance.handleRedirectPromise().catch(() => null)
+        if (result) {
+          setLoading('azure')
+          try {
+            await useAuthStore.getState().loginWithAzure(result.idToken, result.accessToken ?? undefined)
+            const role = useAuthStore.getState().user?.role
+            toast.success(`Signed in via Microsoft as ${role}`)
+            window.location.href = `/${role}`
+          } catch (err: any) {
+            toast.error(err?.response?.data?.detail || err?.message || 'Sign-in failed')
+            setLoading(null)
+          }
+        }
+      })
+    }
+
+    // Dev shortcut: /login?as=admin  /login?as=manager  /login?as=employee
     const role = new URLSearchParams(window.location.search).get('as')
     const demo = DEMOS.find(d => d.role.toLowerCase() === (role || '').toLowerCase())
     if (demo) doLogin(demo.email, demo.password, demo.role)
   }, []) // eslint-disable-line
 
   const doAzureLogin = async () => {
-    if (!msalInstance) {
-      // SSO not configured — shown as greyed button, this shouldn't fire
-      return
-    }
+    if (!msalInstance) return
     setLoading('azure')
     try {
-      await msalInstance.initialize()
-      const result = await msalInstance.loginPopup({
+      await msalReady
+      // Full-page redirect — Microsoft redirects back to /login with the auth code.
+      // sessionStorage is intact on return (same tab), so MSAL finds the PKCE verifier.
+      await msalInstance.loginRedirect({
         scopes: ['openid', 'profile', 'email', 'User.Read'],
+        prompt: 'select_account',   // always show account picker, never silent-login
       })
-      const idToken = result.idToken
-      const accessToken = result.accessToken
-      const { loginWithAzure } = useAuthStore.getState()
-      await loginWithAzure(idToken, accessToken)
-      const role = useAuthStore.getState().user?.role
-      if (!role) throw new Error('Could not determine role')
-      toast.success(`Signed in via Microsoft as ${role}`)
-      window.location.href = `/${role}`
+      // Page navigates away — nothing below this runs.
     } catch (err: any) {
-      const msg = err?.response?.data?.detail || err?.message || 'Microsoft sign-in failed'
-      if (!msg.includes('user_cancelled') && !msg.includes('popup_window_error')) {
-        toast.error(msg)
-      }
+      toast.error(err?.message || 'Microsoft sign-in failed')
       setLoading(null)
     }
   }

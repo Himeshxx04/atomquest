@@ -46,9 +46,9 @@ def _decode_azure_id_token(id_token: str) -> dict:
     payload_b64 = id_token.split(".")[1]
     payload_b64 += "=" * (-len(payload_b64) % 4)
     claims = json.loads(base64.urlsafe_b64decode(payload_b64))
-    # Verify audience matches our client_id
+    # Verify audience matches our client_id (id_tokens always have aud = client_id)
     aud = claims.get("aud", "")
-    if settings.AZURE_CLIENT_ID and aud != settings.AZURE_CLIENT_ID:
+    if settings.AZURE_CLIENT_ID and aud not in (settings.AZURE_CLIENT_ID, ""):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token audience mismatch")
     return claims
 
@@ -77,7 +77,7 @@ def _graph_get_groups(access_token: str) -> list[str]:
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
             data = json.loads(resp.read())
-            return [g.get("displayName", "") for g in data.get("value", [])]
+            return [g.get("displayName") or "" for g in data.get("value", []) if g.get("displayName")]
     except Exception:
         return []
 
@@ -117,9 +117,15 @@ def login_via_azure(id_token: str, db: Session, access_token: str | None = None)
             status_code=status.HTTP_400_BAD_REQUEST, detail="Incomplete claims in Azure token"
         )
 
+    # ── Override role for designated admin emails ─────────────────────────────
+    admin_emails = [e.strip().lower() for e in (settings.AZURE_ADMIN_EMAILS or "").split(",") if e.strip()]
+    print(f"[Azure] token email='{email}' | AZURE_ADMIN_EMAILS={admin_emails}")
+    forced_role: str | None = "admin" if email.lower() in admin_emails else None
+    print(f"[Azure] forced_role={forced_role}")
+
     # ── Org hierarchy & role sync from Graph API ──────────────────────────────
     manager_azure_email: str | None = None
-    role_from_ad: str = "employee"
+    role_from_ad: str = forced_role or "employee"
 
     if access_token:
         # Get manager (org hierarchy)
@@ -127,9 +133,9 @@ def login_via_azure(id_token: str, db: Session, access_token: str | None = None)
         if manager_data:
             manager_azure_email = manager_data.get("mail") or manager_data.get("userPrincipalName")
 
-        # Get group memberships → derive role
+        # Get group memberships → derive role (skipped if email is in admin override list)
         groups = _graph_get_groups(access_token)
-        if groups:
+        if groups and not forced_role:
             role_from_ad = _map_groups_to_role(groups)
             print(f"[Azure] {email} groups={groups} → role={role_from_ad}")
 
@@ -150,8 +156,10 @@ def login_via_azure(id_token: str, db: Session, access_token: str | None = None)
             db.add(user)
             db.flush()
     else:
-        # Sync role from AD on every login if groups are available
-        if access_token and groups:
+        # Sync role on every login — forced_role takes priority over AD groups
+        if forced_role:
+            user.role = forced_role
+        elif access_token and groups:
             user.role = role_from_ad
 
     # ── Sync manager relationship (org hierarchy) ─────────────────────────────

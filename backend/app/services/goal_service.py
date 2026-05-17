@@ -132,6 +132,10 @@ def add_goal(sheet_id: int, data: GoalCreate, employee: User, db: Session) -> Go
             detail=f"Maximum {MAX_GOALS} goals allowed per employee. You already have {len(sheet.goals)}."
         )
 
+    # BRD: minimum 10% per goal
+    if data.weightage < MIN_WEIGHTAGE:
+        raise HTTPException(status_code=400, detail=f"Each goal must have at least {int(MIN_WEIGHTAGE)}% weightage.")
+
     # BRD: projected total must not exceed 100%
     projected = _validate_weightage(sheet.goals, new_weightage=data.weightage)
     if projected > REQUIRED_TOTAL:
@@ -185,6 +189,8 @@ def update_goal(sheet_id: int, goal_id: int, data: GoalUpdate, employee: User, d
 
     if "weightage" in changes:
         new_w = changes["weightage"]
+        if new_w < MIN_WEIGHTAGE:
+            raise HTTPException(status_code=400, detail=f"Each goal must have at least {int(MIN_WEIGHTAGE)}% weightage.")
         projected = _validate_weightage(sheet.goals, exclude_id=goal_id, new_weightage=new_w)
         if projected > REQUIRED_TOTAL:
             raise HTTPException(

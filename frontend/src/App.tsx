@@ -3,6 +3,7 @@ import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './store/auth'
 import Layout from './components/Layout'
 import Login from './pages/auth/Login'
+import AuthRedirect from './pages/auth/AuthRedirect'
 import EmployeeDashboard from './pages/employee/EmployeeDashboard'
 import ManagerDashboard from './pages/manager/ManagerDashboard'
 import ManagerAnalytics from './pages/manager/ManagerAnalytics'
@@ -79,6 +80,9 @@ export default function App() {
             <AuditLog />
           </ProtectedRoute>
         } />
+
+        {/* Azure SSO popup redirect — must be public, no auth guard */}
+        <Route path="/auth-redirect" element={<AuthRedirect />} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to={user ? `/${user.role}` : '/login'} replace />} />

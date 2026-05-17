@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     AZURE_CLIENT_ID: str = ""
     AZURE_TENANT_ID: str = ""
     AZURE_CLIENT_SECRET: str = ""
+    AZURE_ADMIN_EMAILS: str = ""  # comma-separated emails that always get admin role
 
     SENDGRID_API_KEY: str = ""
     FROM_EMAIL: str = "noreply@atomquest.com"
