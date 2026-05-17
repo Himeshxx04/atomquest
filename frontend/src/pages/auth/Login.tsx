@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/auth'
 import { Eye, EyeOff, ArrowRight, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -16,18 +15,25 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState<string | null>(null)
   const { login } = useAuthStore()
-  const navigate  = useNavigate()
+
+  // Dev shortcut: /login?as=admin  /login?as=manager  /login?as=employee
+  useEffect(() => {
+    const role = new URLSearchParams(window.location.search).get('as')
+    const demo = DEMOS.find(d => d.role.toLowerCase() === (role || '').toLowerCase())
+    if (demo) doLogin(demo.email, demo.password, demo.role)
+  }, []) // eslint-disable-line
 
   const doLogin = async (e: string, p: string, tag: string) => {
     setLoading(tag)
     try {
       await login(e, p)
       const role = useAuthStore.getState().user?.role
+      if (!role) throw new Error('Could not determine role')
       toast.success(`Signed in as ${role}`)
-      navigate(`/${role}`)
+      // Full page redirect — ensures ProtectedRoute sees the persisted token on load
+      window.location.href = `/${role}`
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Invalid credentials')
-    } finally {
       setLoading(null)
     }
   }

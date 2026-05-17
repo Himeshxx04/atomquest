@@ -12,11 +12,13 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401, clear token and redirect to login
+// On 401, clear token and redirect to login —
+// but NOT for /auth/login itself (wrong password → just show toast, don't reload)
 api.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) {
+    const isLoginCall = err.config?.url?.includes('/auth/login')
+    if (err.response?.status === 401 && !isLoginCall) {
       localStorage.removeItem('token')
       window.location.href = '/login'
     }

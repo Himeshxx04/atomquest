@@ -30,9 +30,8 @@ export const useAuthStore = create<AuthState>()(
       login: async (email, password) => {
         const { data } = await api.post('/auth/login', { email, password })
         localStorage.setItem('token', data.access_token)
-        set({ token: data.access_token })
-        const me = await api.get('/auth/me')
-        set({ user: me.data })
+        // Use the user object bundled in the login response — no extra /auth/me round-trip
+        set({ token: data.access_token, user: data.user })
       },
 
       demoSwitch: async (role) => {

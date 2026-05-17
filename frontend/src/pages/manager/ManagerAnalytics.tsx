@@ -24,59 +24,52 @@ export default function ManagerAnalytics() {
   }, [user])
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Department Analytics</h1>
-        <p className="text-slate-500 mt-0.5">{user?.department} — Quarter-on-Quarter trend</p>
+    <div style={{ minHeight: '100%', background: '#f8fafc', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '28px 40px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Department Analytics</h1>
+        <p style={{ color: '#64748b', fontSize: '13px', marginTop: '4px', marginBottom: 0 }}>{user?.department} — Quarter-on-Quarter trend</p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-12 text-slate-400">Loading…</div>
-      ) : (
-        <div className="bg-white rounded-xl border border-slate-100 p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={18} className="text-blue-500" />
-            <h2 className="font-semibold text-slate-700">Average Progress Score by Quarter</h2>
+      <div style={{ padding: '32px 40px' }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '60px 0', color: '#94a3b8' }}>Loading…</div>
+        ) : (
+          <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+              <TrendingUp size={18} color="#3b82f6" />
+              <h2 style={{ fontWeight: 700, color: '#374151', fontSize: '15px', margin: 0 }}>Average Progress Score by Quarter</h2>
+            </div>
+            {qoq.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0' }}>
+                <Target size={40} color="#cbd5e1" style={{ margin: '0 auto 8px', display: 'block' }} />
+                <p style={{ color: '#94a3b8', margin: '0 0 4px' }}>No check-in data yet.</p>
+                <p style={{ color: '#94a3b8', fontSize: '13px', margin: 0 }}>Data appears after team members log quarterly actuals.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={qoq}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="quarter" tick={{ fontSize: 12 }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} unit="%" />
+                  <Tooltip formatter={(v) => [`${v}%`, 'Avg Score']} />
+                  <Line type="monotone" dataKey="avg_score" stroke="#3b82f6" strokeWidth={2.5} dot={{ fill: '#3b82f6', r: 5 }} name="Avg Score" />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+            {qoq.length > 0 && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+                {qoq.map((p) => (
+                  <div key={p.quarter} style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: '0 0 4px' }}>{p.quarter}</p>
+                    <p style={{ fontSize: '20px', fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>{p.avg_score != null ? `${p.avg_score}%` : '—'}</p>
+                    <p style={{ fontSize: '12px', color: '#94a3b8', margin: 0 }}>{p.entries} entries</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {qoq.length === 0 ? (
-            <div className="text-center py-12">
-              <Target size={40} className="mx-auto text-slate-300 mb-2" />
-              <p className="text-slate-400">No check-in data yet.</p>
-              <p className="text-slate-400 text-sm">Data appears after team members log quarterly actuals.</p>
-            </div>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={qoq}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="quarter" tick={{ fontSize: 12 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} unit="%" />
-                <Tooltip formatter={(v) => [`${v}%`, 'Avg Score']} />
-                <Line
-                  type="monotone"
-                  dataKey="avg_score"
-                  stroke="#3b82f6"
-                  strokeWidth={2.5}
-                  dot={{ fill: '#3b82f6', r: 5 }}
-                  name="Avg Score"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          )}
-          {qoq.length > 0 && (
-            <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-slate-100">
-              {qoq.map((p) => (
-                <div key={p.quarter} className="text-center">
-                  <p className="text-xs text-slate-400">{p.quarter}</p>
-                  <p className="text-xl font-bold text-slate-800 mt-1">
-                    {p.avg_score != null ? `${p.avg_score}%` : '—'}
-                  </p>
-                  <p className="text-xs text-slate-400">{p.entries} entries</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

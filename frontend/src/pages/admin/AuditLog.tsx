@@ -2,24 +2,42 @@ import { useEffect, useState } from 'react'
 import api from '../../lib/api'
 import toast from 'react-hot-toast'
 import { Shield, Search } from 'lucide-react'
-import { format } from 'date-fns'
+
+function fmtDate(iso: string | null | undefined): string {
+  try {
+    if (!iso) return '—'
+    const normalized = iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z'
+    const d = new Date(normalized)
+    if (isNaN(d.getTime())) return iso.slice(0, 16).replace('T', ' ')
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ', ' +
+      d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+  } catch {
+    return iso ? iso.slice(0, 16).replace('T', ' ') : '—'
+  }
+}
 
 interface AuditEntry {
-  id: number; entity_type: string; entity_id: number; action: string;
-  field_name: string | null; old_value: string | null; new_value: string | null;
-  note: string | null; created_at: string;
+  id: number
+  entity_type: string
+  entity_id: number
+  action: string
+  field_name: string | null
+  old_value: string | null
+  new_value: string | null
+  note: string | null
+  changed_at: string
   changed_by_user?: { name: string }
 }
 
-const ACTION_COLORS: Record<string, string> = {
-  created: 'bg-green-100 text-green-700',
-  updated: 'bg-blue-100 text-blue-700',
-  deleted: 'bg-red-100 text-red-700',
-  submitted: 'bg-amber-100 text-amber-700',
-  approved: 'bg-green-100 text-green-700',
-  returned: 'bg-red-100 text-red-700',
-  locked: 'bg-slate-100 text-slate-700',
-  unlocked: 'bg-purple-100 text-purple-700',
+const ACTION_COLORS: Record<string, { bg: string; text: string }> = {
+  created:   { bg: '#dcfce7', text: '#15803d' },
+  updated:   { bg: '#dbeafe', text: '#1d4ed8' },
+  deleted:   { bg: '#fee2e2', text: '#dc2626' },
+  submitted: { bg: '#fef3c7', text: '#b45309' },
+  approved:  { bg: '#dcfce7', text: '#15803d' },
+  returned:  { bg: '#fee2e2', text: '#dc2626' },
+  locked:    { bg: '#f1f5f9', text: '#475569' },
+  unlocked:  { bg: '#f5f3ff', text: '#6d28d9' },
 }
 
 export default function AuditLog() {
@@ -32,111 +50,187 @@ export default function AuditLog() {
 
   useEffect(() => {
     setLoading(true)
-    api.get('/admin/audit-logs?limit=300').then((r) => setLogs(r.data))
+    api.get('/admin/audit-logs?limit=300')
+      .then((r) => {
+        const data = Array.isArray(r.data) ? r.data : []
+        setLogs(data)
+      })
       .catch(() => toast.error('Failed to load audit logs'))
       .finally(() => setLoading(false))
   }, [])
 
+  const searchLower = search.toLowerCase()
   const filtered = logs.filter((l) => {
     const matchSearch = !search ||
-      l.entity_type.includes(search.toLowerCase()) ||
-      l.action.includes(search.toLowerCase()) ||
-      (l.note || '').toLowerCase().includes(search.toLowerCase())
+      (l.entity_type || '').toLowerCase().includes(searchLower) ||
+      (l.action || '').toLowerCase().includes(searchLower) ||
+      (l.note || '').toLowerCase().includes(searchLower)
     const matchAction = !filterAction || l.action === filterAction
     return matchSearch && matchAction
   })
 
   const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
-  const actions = [...new Set(logs.map((l) => l.action))]
+  const actions = [...new Set(logs.map((l) => l.action).filter(Boolean))]
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex items-center gap-3 mb-6">
-        <Shield size={22} className="text-slate-600" />
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Audit Log</h1>
-          <p className="text-slate-500 text-sm">Every post-approval change tracked</p>
+    <div style={{ minHeight: '100%', background: '#f8fafc', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+      {/* Header */}
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '28px 40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <Shield size={22} color="#475569" />
+          <div>
+            <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Audit Log</h1>
+            <p style={{ color: '#64748b', fontSize: '13px', marginTop: '3px', marginBottom: 0 }}>
+              Every post-approval change tracked
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="flex gap-3 mb-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search size={16} className="absolute left-3 top-3 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(0) }}
-            placeholder="Search…"
-            className="pl-9 pr-4 py-2 border border-slate-200 rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div style={{ padding: '28px 40px' }}>
+        {/* Filters */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+          <div style={{ position: 'relative', flex: 1, maxWidth: '360px' }}>
+            <Search
+              size={15}
+              color="#94a3b8"
+              style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+            />
+            <input
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(0) }}
+              placeholder="Search…"
+              style={{
+                paddingLeft: '36px', paddingRight: '16px', paddingTop: '9px', paddingBottom: '9px',
+                border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '13px',
+                width: '100%', outline: 'none', boxSizing: 'border-box',
+              }}
+            />
+          </div>
+          <select
+            value={filterAction}
+            onChange={(e) => { setFilterAction(e.target.value); setPage(0) }}
+            style={{
+              padding: '9px 14px', border: '1px solid #e2e8f0', borderRadius: '10px',
+              fontSize: '13px', background: 'white', outline: 'none', cursor: 'pointer',
+            }}
+          >
+            <option value="">All Actions</option>
+            {actions.map((a) => <option key={a} value={a}>{a}</option>)}
+          </select>
+          <p style={{ fontSize: '13px', color: '#94a3b8', margin: 0 }}>{filtered.length} entries</p>
         </div>
-        <select
-          value={filterAction}
-          onChange={(e) => { setFilterAction(e.target.value); setPage(0) }}
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Actions</option>
-          {actions.map((a) => <option key={a} value={a}>{a}</option>)}
-        </select>
-        <p className="self-center text-sm text-slate-400">{filtered.length} entries</p>
-      </div>
 
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50">
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Time</th>
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Entity</th>
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Action</th>
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Field</th>
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Change</th>
-              <th className="text-left py-3 px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Note</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-400">Loading…</td></tr>
-            ) : paginated.length === 0 ? (
-              <tr><td colSpan={6} className="text-center py-8 text-slate-400">No audit entries found</td></tr>
-            ) : paginated.map((log) => (
-              <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                <td className="py-2.5 px-4 text-slate-400 text-xs whitespace-nowrap">
-                  {format(new Date(log.created_at), 'MMM d, HH:mm')}
-                </td>
-                <td className="py-2.5 px-4">
-                  <span className="text-slate-600 capitalize">{log.entity_type.replace('_', ' ')}</span>
-                  <span className="text-slate-400 ml-1">#{log.entity_id}</span>
-                </td>
-                <td className="py-2.5 px-4">
-                  <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium ${ACTION_COLORS[log.action] || 'bg-slate-100 text-slate-600'}`}>
-                    {log.action}
-                  </span>
-                </td>
-                <td className="py-2.5 px-4 text-slate-500 text-xs">{log.field_name || '—'}</td>
-                <td className="py-2.5 px-4 text-xs">
-                  {log.old_value != null && (
-                    <span>
-                      <span className="text-red-500 line-through">{log.old_value}</span>
-                      <span className="mx-1 text-slate-300">→</span>
-                      <span className="text-green-600">{log.new_value}</span>
-                    </span>
-                  )}
-                </td>
-                <td className="py-2.5 px-4 text-slate-400 text-xs max-w-xs truncate">{log.note || '—'}</td>
+        {/* Table */}
+        <div style={{
+          background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.05)', overflow: 'hidden',
+        }}>
+          <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+                {['Time', 'Entity', 'Action', 'Field', 'Change', 'Note'].map((h) => (
+                  <th
+                    key={h}
+                    style={{
+                      padding: '12px 16px', fontSize: '11px', fontWeight: 700,
+                      color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left',
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-3 mt-4">
-          <button onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0} className="px-4 py-2 border border-slate-200 rounded-lg text-sm disabled:opacity-40 hover:bg-slate-50 transition-colors">Previous</button>
-          <span className="text-sm text-slate-500">Page {page + 1} of {totalPages}</span>
-          <button onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page === totalPages - 1} className="px-4 py-2 border border-slate-200 rounded-lg text-sm disabled:opacity-40 hover:bg-slate-50 transition-colors">Next</button>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+                    Loading…
+                  </td>
+                </tr>
+              ) : paginated.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '48px', color: '#94a3b8' }}>
+                    No audit entries found
+                  </td>
+                </tr>
+              ) : paginated.map((log) => {
+                const ac = ACTION_COLORS[log.action] ?? { bg: '#f1f5f9', text: '#475569' }
+                const entityLabel = (log.entity_type || '').replace(/_/g, ' ')
+                return (
+                  <tr key={log.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '10px 16px', color: '#94a3b8', fontSize: '12px', whiteSpace: 'nowrap' }}>
+                      {fmtDate(log.changed_at)}
+                    </td>
+                    <td style={{ padding: '10px 16px' }}>
+                      <span style={{ color: '#475569', textTransform: 'capitalize' }}>{entityLabel}</span>
+                      <span style={{ color: '#94a3b8', marginLeft: '4px' }}>#{log.entity_id}</span>
+                    </td>
+                    <td style={{ padding: '10px 16px' }}>
+                      <span style={{
+                        fontSize: '11px', padding: '3px 10px', borderRadius: '999px',
+                        fontWeight: 700, textTransform: 'capitalize',
+                        background: ac.bg, color: ac.text,
+                      }}>
+                        {log.action}
+                      </span>
+                    </td>
+                    <td style={{ padding: '10px 16px', color: '#64748b', fontSize: '12px' }}>
+                      {log.field_name || '—'}
+                    </td>
+                    <td style={{ padding: '10px 16px', fontSize: '12px' }}>
+                      {log.old_value != null ? (
+                        <span>
+                          <span style={{ color: '#ef4444', textDecoration: 'line-through' }}>{log.old_value}</span>
+                          <span style={{ margin: '0 4px', color: '#cbd5e1' }}>→</span>
+                          <span style={{ color: '#16a34a' }}>{log.new_value ?? ''}</span>
+                        </span>
+                      ) : null}
+                    </td>
+                    <td style={{
+                      padding: '10px 16px', color: '#94a3b8', fontSize: '12px',
+                      maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {log.note || '—'}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
-      )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '20px' }}>
+            <button
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+              disabled={page === 0}
+              style={{
+                padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                fontSize: '13px', cursor: page === 0 ? 'not-allowed' : 'pointer',
+                opacity: page === 0 ? 0.4 : 1, background: 'white',
+              }}
+            >
+              Previous
+            </button>
+            <span style={{ fontSize: '13px', color: '#64748b' }}>Page {page + 1} of {totalPages}</span>
+            <button
+              onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+              disabled={page === totalPages - 1}
+              style={{
+                padding: '8px 16px', border: '1px solid #e2e8f0', borderRadius: '8px',
+                fontSize: '13px', cursor: page === totalPages - 1 ? 'not-allowed' : 'pointer',
+                opacity: page === totalPages - 1 ? 0.4 : 1, background: 'white',
+              }}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

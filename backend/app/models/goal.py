@@ -18,7 +18,10 @@ class UoMType(str, enum.Enum):
 class GoalStatus(str, enum.Enum):
     NOT_STARTED = "not_started"
     ON_TRACK = "on_track"
+    AT_RISK = "at_risk"
+    BEHIND = "behind"
     COMPLETED = "completed"
+    EXCEEDED = "exceeded"
 
 
 class SheetStatus(str, enum.Enum):

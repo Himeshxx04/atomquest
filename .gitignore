@@ -49,3 +49,11 @@ dump.rdb
 
 # Project planning notes
 CLAUDE.md
+.claude/
+
+# One-time debug / migration scripts (not for repo)
+backend/check_*.py
+backend/fix_*.py
+backend/make_inject.py
+backend/js_inject_manager.txt
+backend/verify_all.py

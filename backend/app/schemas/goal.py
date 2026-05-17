@@ -13,6 +13,17 @@ class ThrustAreaRead(BaseModel):
         from_attributes = True
 
 
+class EmployeeBasic(BaseModel):
+    """Minimal employee info embedded in goal sheet responses."""
+    id: int
+    name: str
+    email: str
+    department: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
 class CycleRead(BaseModel):
     id: int
     year: int
@@ -130,6 +141,7 @@ class GoalSheetRead(BaseModel):
     return_reason: Optional[str] = None
     goals: List[GoalRead] = []
     total_weightage: float = 0.0
+    employee: Optional[EmployeeBasic] = None
 
     class Config:
         from_attributes = True

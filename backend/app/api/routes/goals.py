@@ -121,11 +121,17 @@ def team_sheets(
     current_user=Depends(require_role("manager", "admin")),
 ):
     """All goal sheets for the manager's direct reports in a given cycle."""
+    from sqlalchemy.orm import joinedload
     direct_report_ids = [u.id for u in db.query(User).filter(User.manager_id == current_user.id).all()]
-    return db.query(GoalSheet).filter(
-        GoalSheet.employee_id.in_(direct_report_ids),
-        GoalSheet.cycle_id == cycle_id,
-    ).all()
+    return (
+        db.query(GoalSheet)
+        .options(joinedload(GoalSheet.employee), joinedload(GoalSheet.goals))
+        .filter(
+            GoalSheet.employee_id.in_(direct_report_ids),
+            GoalSheet.cycle_id == cycle_id,
+        )
+        .all()
+    )
 
 
 @router.post("/sheets/{sheet_id}/manager-action", response_model=GoalSheetRead)
@@ -221,15 +227,28 @@ def push_shared_goal(
         raise HTTPException(status_code=404, detail="Thrust area not found")
 
     created = []
+    skipped = []
     for emp_id in body.recipient_ids:
         employee = db.query(User).filter(User.id == emp_id).first()
         if not employee:
+            skipped.append({"employee_id": emp_id, "reason": "Employee not found"})
             continue
 
         sheet = goal_service.get_or_create_sheet(employee, cycle_id, db)
 
         if len(sheet.goals) >= goal_service.MAX_GOALS:
-            continue  # skip employees at capacity
+            skipped.append({"employee_id": emp_id, "reason": f"At max goal capacity ({goal_service.MAX_GOALS})"})
+            continue
+
+        # BRD enforcement: total weightage must not exceed 100%
+        current_total = sum(g.weightage for g in sheet.goals)
+        push_weight = body.default_weightage or 0
+        if current_total + push_weight > 100.0:
+            skipped.append({
+                "employee_id": emp_id,
+                "reason": f"Would exceed 100% weightage (current: {current_total}%, push: {push_weight}%)"
+            })
+            continue
 
         goal = Goal(
             goal_sheet_id=sheet.id,
@@ -254,7 +273,7 @@ def push_shared_goal(
         created.append(emp_id)
 
     db.commit()
-    return {"pushed_to": created, "count": len(created)}
+    return {"pushed_to": created, "count": len(created), "skipped": skipped}
 
 
 @router.put("/shared/{goal_id}/weightage", response_model=GoalRead)

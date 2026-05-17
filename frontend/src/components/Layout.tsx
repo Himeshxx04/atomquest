@@ -25,16 +25,20 @@ const adminLinks = [
   { to: '/admin/audit', label: 'Audit Log', icon: Shield },
 ]
 
-const ROLE_META = {
-  employee: { gradient: 'from-emerald-400 to-teal-500',   ring: 'ring-emerald-500/30', label: 'Employee' },
-  manager:  { gradient: 'from-blue-400 to-indigo-500',    ring: 'ring-blue-500/30',    label: 'Manager'  },
-  admin:    { gradient: 'from-purple-400 to-violet-500',  ring: 'ring-purple-500/30',  label: 'Admin'    },
+const ROLE_GRADIENTS: Record<string, string> = {
+  employee: 'linear-gradient(135deg,#34d399,#14b8a6)',
+  manager:  'linear-gradient(135deg,#60a5fa,#6366f1)',
+  admin:    'linear-gradient(135deg,#a78bfa,#8b5cf6)',
 }
-
+const ROLE_BADGE: Record<string, { bg: string; color: string }> = {
+  employee: { bg: 'rgba(52,211,153,0.15)',  color: '#34d399' },
+  manager:  { bg: 'rgba(96,165,250,0.15)',  color: '#60a5fa' },
+  admin:    { bg: 'rgba(167,139,250,0.15)', color: '#a78bfa' },
+}
 const DEMO_ROLES = [
-  { key: 'employee' as const, short: 'Employee', color: 'hover:bg-emerald-500/20 data-[active=true]:bg-emerald-500 data-[active=true]:text-white text-slate-400' },
-  { key: 'manager'  as const, short: 'Manager',  color: 'hover:bg-blue-500/20 data-[active=true]:bg-blue-500 data-[active=true]:text-white text-slate-400' },
-  { key: 'admin'    as const, short: 'Admin',    color: 'hover:bg-purple-500/20 data-[active=true]:bg-purple-500 data-[active=true]:text-white text-slate-400' },
+  { key: 'employee' as const, label: 'Employee', activeBg: '#10b981' },
+  { key: 'manager'  as const, label: 'Manager',  activeBg: '#3b82f6' },
+  { key: 'admin'    as const, label: 'Admin',    activeBg: '#8b5cf6' },
 ]
 
 export default function Layout({ children }: LayoutProps) {
@@ -45,104 +49,107 @@ export default function Layout({ children }: LayoutProps) {
     user?.role === 'admin'   ? adminLinks :
     user?.role === 'manager' ? managerLinks : employeeLinks
 
-  const meta = ROLE_META[user?.role ?? 'employee']
+  const roleKey = (user?.role ?? 'employee') as keyof typeof ROLE_BADGE
+  const badge = ROLE_BADGE[roleKey] || ROLE_BADGE.employee
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#0f172a' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#0f172a', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+
       {/* ── Sidebar ── */}
-      <aside className="w-64 flex-shrink-0 flex flex-col border-r border-white/5" style={{ background: '#0f172a' }}>
+      <aside style={{ width: '240px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid rgba(255,255,255,0.05)', background: '#0f172a' }}>
 
         {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-white/5">
-          <div className="w-9 h-9 rounded-xl bg-blue-500 flex items-center justify-center shadow-lg shadow-blue-500/40 flex-shrink-0">
-            <Zap size={18} className="text-white" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 4px 12px rgba(59,130,246,0.4)' }}>
+            <Zap size={18} color="white" />
           </div>
           <div>
-            <p className="text-white font-bold text-base leading-none">GoalFlow</p>
-            <p className="text-slate-500 text-[11px] mt-0.5">Tracking Portal</p>
+            <p style={{ color: 'white', fontWeight: 800, fontSize: '15px', margin: 0, lineHeight: 1 }}>GoalFlow</p>
+            <p style={{ color: '#475569', fontSize: '11px', margin: '3px 0 0' }}>Tracking Portal</p>
           </div>
         </div>
 
-        {/* User */}
-        <div className="px-4 py-4 border-b border-white/5">
-          <div className="flex items-center gap-3 bg-white/5 rounded-xl px-3 py-3">
-            <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${meta.gradient} ring-2 ${meta.ring} flex items-center justify-center text-white font-bold text-sm flex-shrink-0`}>
+        {/* User card */}
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', padding: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: ROLE_GRADIENTS[roleKey] || ROLE_GRADIENTS.employee, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '14px', flexShrink: 0 }}>
               {user?.name?.charAt(0).toUpperCase()}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-white text-sm font-semibold truncate leading-none">{user?.name}</p>
-              <p className="text-slate-400 text-xs mt-1 truncate">{user?.department ?? meta.label}</p>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ color: 'white', fontSize: '13px', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.name}</p>
+              <p style={{ color: '#64748b', fontSize: '11px', margin: '3px 0 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.department ?? roleKey}</p>
             </div>
-            <span className={`text-[10px] font-bold px-2 py-1 rounded-lg uppercase tracking-wider flex-shrink-0 ${
-              user?.role === 'admin'   ? 'bg-purple-500/20 text-purple-300' :
-              user?.role === 'manager' ? 'bg-blue-500/20 text-blue-300' :
-                                        'bg-emerald-500/20 text-emerald-300'
-            }`}>
+            <span style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', flexShrink: 0, background: badge.bg, color: badge.color }}>
               {user?.role?.slice(0, 3)}
             </span>
           </div>
         </div>
 
         {/* Nav links */}
-        <nav className="flex-1 px-4 py-4 space-y-1">
+        <nav style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {links.map(({ to, label, icon: Icon }) => {
             const active = location.pathname === to
             return (
               <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
-                  active
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-400 hover:text-white hover:bg-white/8'
-                }`}
+                key={to} to={to}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                  padding: '10px 12px', borderRadius: '10px', fontSize: '13px',
+                  fontWeight: 500, textDecoration: 'none', transition: 'all 0.15s',
+                  background: active ? '#2563eb' : 'transparent',
+                  color: active ? 'white' : '#64748b',
+                  boxShadow: active ? '0 4px 12px rgba(37,99,235,0.3)' : 'none',
+                }}
               >
-                <Icon size={16} className={active ? 'text-white' : 'text-slate-500'} />
+                <Icon size={15} color={active ? 'white' : '#475569'} />
                 {label}
               </Link>
             )
           })}
         </nav>
 
-        {/* Demo switcher */}
-        <div className="px-4 pb-2">
-          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-2.5">Demo Role</p>
-            <div className="grid grid-cols-3 gap-1.5">
-              {DEMO_ROLES.map(({ key, short }) => (
-                <button
-                  key={key}
-                  onClick={() => demoSwitch(key)}
-                  data-active={user?.role === key}
-                  className={`py-1.5 px-1 rounded-lg text-[11px] font-semibold transition-all ${
-                    user?.role === key
-                      ? key === 'employee' ? 'bg-emerald-500 text-white'
-                        : key === 'manager' ? 'bg-blue-500 text-white'
-                        : 'bg-purple-500 text-white'
-                      : 'text-slate-500 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  {short}
-                </button>
-              ))}
+        {/* Demo role switcher */}
+        <div style={{ padding: '0 16px 12px' }}>
+          <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <p style={{ fontSize: '10px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 10px' }}>Demo Role</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+              {DEMO_ROLES.map(({ key, label, activeBg }) => {
+                const isActive = user?.role === key
+                return (
+                  <button
+                    key={key}
+                    onClick={() => demoSwitch(key)}
+                    style={{
+                      padding: '6px 4px', borderRadius: '8px', fontSize: '11px',
+                      fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                      background: isActive ? activeBg : 'transparent',
+                      color: isActive ? 'white' : '#475569',
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
           </div>
         </div>
 
-        {/* Logout */}
-        <div className="px-4 pb-5 pt-1">
+        {/* Sign out */}
+        <div style={{ padding: '0 16px 20px' }}>
           <button
             onClick={logout}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-sm font-medium transition-all"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', color: '#475569', background: 'transparent', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+            onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = '#f87171'; el.style.background = 'rgba(239,68,68,0.08)' }}
+            onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.style.color = '#475569'; el.style.background = 'transparent' }}
           >
-            <LogOut size={15} />
+            <LogOut size={14} />
             Sign Out
           </button>
         </div>
       </aside>
 
-      {/* ── Main content ── */}
-      <main className="flex-1 overflow-auto bg-slate-50">
+      {/* ── Main content area ── */}
+      <main style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', minWidth: 0 }}>
         {children}
       </main>
     </div>

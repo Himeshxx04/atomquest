@@ -55,6 +55,8 @@ def compute_progress_score(goal: Goal, actual_numeric: Optional[float], actual_d
             if goal.target_numeric and goal.target_numeric > 0:
                 return round(min((actual_numeric / goal.target_numeric) * 100, 100), 2)
         elif goal.uom_type == UoMType.MAX:
+            if actual_numeric is not None and actual_numeric == 0:
+                return 100.0  # Zero actual on a lower-is-better goal = perfect score
             if actual_numeric and actual_numeric > 0:
                 return round(min((goal.target_numeric / actual_numeric) * 100, 100), 2)
         elif goal.uom_type == UoMType.TIMELINE:
@@ -245,8 +247,8 @@ def submit_sheet(sheet_id: int, employee: User, db: Session) -> GoalSheet:
         if employee.manager:
             cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
             notify_sheet_submitted(employee, employee.manager, cycle_label)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[Notify] Failed to send submit email: {e}")
 
     return sheet
 
@@ -262,6 +264,8 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
 
     # Verify manager has authority over this employee
     employee = db.query(User).filter(User.id == sheet.employee_id).first()
+    if not employee:
+        raise HTTPException(status_code=404, detail="Employee not found for this sheet.")
     if employee.manager_id != manager.id and manager.role != "admin":
         raise HTTPException(status_code=403, detail="You are not this employee's manager.")
 
@@ -306,8 +310,8 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
             from .notification_service import notify_sheet_approved
             cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
             notify_sheet_approved(employee, cycle_label)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Notify] Failed to send approve email: {e}")
 
         return sheet
 
@@ -316,6 +320,9 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
             raise HTTPException(status_code=400, detail="return_reason is required when returning a sheet.")
         sheet.status = SheetStatus.RETURNED
         sheet.return_reason = return_reason
+        # Unlock all goals so the employee can re-edit and re-submit
+        for goal in sheet.goals:
+            goal.is_locked = False
         _log_audit(db, "goal_sheet", sheet.id, manager.id, "returned", note=return_reason)
         db.commit()
         db.refresh(sheet)
@@ -324,8 +331,8 @@ def manager_action(sheet_id: int, action: str, manager: User, db: Session,
             from .notification_service import notify_sheet_returned
             cycle_label = f"{sheet.cycle.year} {sheet.cycle.phase.value}"
             notify_sheet_returned(employee, return_reason, cycle_label)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[Notify] Failed to send return email: {e}")
 
         return sheet
 
@@ -376,15 +383,15 @@ def update_actual(goal_id: int, cycle_id: int, actual_numeric, actual_date,
             detail=f"Actuals can only be logged during a check-in cycle (Q1–Q4). Current cycle phase is '{cycle.phase.value}'."
         )
     today = datetime.now(timezone.utc).date()
-    if cycle.start_date and today < cycle.start_date:
+    if cycle.window_open and today < cycle.window_open:
         raise HTTPException(
             status_code=400,
-            detail=f"The {cycle.phase.value.upper()} check-in window opens on {cycle.start_date}. You cannot log actuals yet."
+            detail=f"The {cycle.phase.value.upper()} check-in window opens on {cycle.window_open}. You cannot log actuals yet."
         )
-    if cycle.end_date and today > cycle.end_date:
+    if cycle.window_close and today > cycle.window_close:
         raise HTTPException(
             status_code=400,
-            detail=f"The {cycle.phase.value.upper()} check-in window closed on {cycle.end_date}. Contact Admin if you need to log late actuals."
+            detail=f"The {cycle.phase.value.upper()} check-in window closed on {cycle.window_close}. Contact Admin if you need to log late actuals."
         )
 
     score = compute_progress_score(goal, actual_numeric, actual_date)

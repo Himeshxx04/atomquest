@@ -32,12 +32,21 @@ export default function Analytics() {
   const [dept, setDept] = useState('')
   const [loading, setLoading] = useState(true)
 
+  // Fetch the full (unfiltered) heatmap once for the department list
+  const [allDepts, setAllDepts] = useState<string[]>([])
+  useEffect(() => {
+    api.get('/analytics/heatmap').then((r) => {
+      const depts = [...new Set((r.data as HeatmapRow[]).map((row) => row.department))].sort()
+      setAllDepts(depts)
+    }).catch(() => {})
+  }, [])
+
   useEffect(() => {
     const params = dept ? `?department=${encodeURIComponent(dept)}` : ''
     setLoading(true)
     Promise.all([
       api.get(`/analytics/qoq-trend${params}`),
-      api.get('/analytics/heatmap'),
+      api.get(`/analytics/heatmap${params}`),
       api.get('/analytics/goal-distribution'),
       api.get('/analytics/manager-effectiveness'),
     ]).then(([q, h, d, m]) => {
@@ -49,29 +58,29 @@ export default function Analytics() {
     .finally(() => setLoading(false))
   }, [dept])
 
-  const departments = [...new Set(heatmap.map((r) => r.department))]
-
-  if (loading) return <div className="p-6 text-center text-slate-400 py-16">Loading analytics…</div>
+  if (loading) return <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>Loading analytics…</div>
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6">
-      <div className="flex items-center justify-between mb-2">
-        <h1 className="text-2xl font-bold text-slate-900">Analytics</h1>
+    <div style={{ minHeight: '100%', background: '#f8fafc', fontFamily: 'system-ui,-apple-system,sans-serif' }}>
+      <div style={{ background: 'white', borderBottom: '1px solid #e2e8f0', padding: '28px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a', margin: 0 }}>Analytics</h1>
         <select
           value={dept}
           onChange={(e) => setDept(e.target.value)}
-          className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          style={{ padding: '10px 16px', border: '1px solid #e2e8f0', borderRadius: '12px', fontSize: '13px', outline: 'none', background: 'white', cursor: 'pointer' }}
         >
           <option value="">All Departments</option>
-          {departments.map((d) => <option key={d} value={d}>{d}</option>)}
+          {allDepts.map((d) => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>
 
+      <div style={{ padding: '28px 40px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+
       {/* QoQ Trend */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Quarter-on-Quarter Progress Score Trend</h2>
+      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>Quarter-on-Quarter Progress Score Trend</h2>
         {qoq.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-8">No check-in data yet. Data appears after Q1–Q4 actuals are logged.</p>
+          <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '32px 0' }}>No check-in data yet. Data appears after Q1–Q4 actuals are logged.</p>
         ) : (
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={qoq}>
@@ -86,12 +95,12 @@ export default function Analytics() {
       </div>
 
       {/* Heatmap */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Completion Rate Heatmap (Dept × Quarter)</h2>
+      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>Completion Rate Heatmap (Dept × Quarter)</h2>
         {heatmap.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-8">No data yet for heatmap.</p>
+          <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '32px 0' }}>No data yet for heatmap.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div style={{ overflowX: 'auto' }}>
             <HeatmapTable data={heatmap} />
           </div>
         )}
@@ -99,9 +108,9 @@ export default function Analytics() {
 
       {/* Goal Distribution */}
       {distribution && (
-        <div className="grid grid-cols-3 gap-6">
-          <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">By Thrust Area</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>By Thrust Area</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={distribution.by_thrust_area} layout="vertical">
                 <XAxis type="number" tick={{ fontSize: 10 }} />
@@ -116,8 +125,8 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">By UoM Type</h2>
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>By UoM Type</h2>
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
                 <Pie data={distribution.by_uom_type} dataKey="count" nameKey="uom_type" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${(name as string).toUpperCase()} ${((percent as number) * 100).toFixed(0)}%`}>
@@ -130,8 +139,8 @@ export default function Analytics() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">By Achievement Status</h2>
+          <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+            <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>By Achievement Status</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={distribution.by_status}>
                 <XAxis dataKey="status" tick={{ fontSize: 10 }} />
@@ -149,44 +158,42 @@ export default function Analytics() {
       )}
 
       {/* Manager Effectiveness */}
-      <div className="bg-white rounded-xl border border-slate-100 p-5 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wider mb-4">Manager Effectiveness</h2>
+      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', padding: '20px 24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+        <h2 style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: '16px' }}>Manager Effectiveness</h2>
         {managers.length === 0 ? (
-          <p className="text-slate-400 text-sm text-center py-8">No manager data available.</p>
+          <p style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '32px 0' }}>No manager data available.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', fontSize: '13px', borderCollapse: 'collapse' }}>
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Manager</th>
-                  <th className="text-left py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Dept</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Team Size</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Approval Rate</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Avg Days to Approve</th>
-                  <th className="text-center py-2 px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider">Check-in Comments</th>
+                <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  {['Manager', 'Dept', 'Team Size', 'Approval Rate', 'Avg Days to Approve', 'Check-in Comments'].map((h, i) => (
+                    <th key={h} style={{ padding: '10px 12px', fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: i <= 1 ? 'left' : 'center' }}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {managers.map((mgr, i) => (
-                  <tr key={i} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-3 font-medium text-slate-800">{mgr.manager_name}</td>
-                    <td className="py-3 px-3 text-slate-500">{mgr.department}</td>
-                    <td className="py-3 px-3 text-center text-slate-600">{mgr.team_size}</td>
-                    <td className="py-3 px-3 text-center">
-                      <span className={`font-semibold ${mgr.approval_rate_pct >= 80 ? 'text-green-600' : mgr.approval_rate_pct >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
+                  <tr key={i} style={{ borderBottom: '1px solid #f8fafc' }}>
+                    <td style={{ padding: '12px', fontWeight: 600, color: '#1e293b' }}>{mgr.manager_name}</td>
+                    <td style={{ padding: '12px', color: '#64748b' }}>{mgr.department}</td>
+                    <td style={{ padding: '12px', textAlign: 'center', color: '#475569' }}>{mgr.team_size}</td>
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{ fontWeight: 700, color: mgr.approval_rate_pct >= 80 ? '#16a34a' : mgr.approval_rate_pct >= 50 ? '#d97706' : '#dc2626' }}>
                         {mgr.approval_rate_pct}%
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-center text-slate-600">
+                    <td style={{ padding: '12px', textAlign: 'center', color: '#475569' }}>
                       {mgr.avg_approval_days != null ? `${mgr.avg_approval_days}d` : '—'}
                     </td>
-                    <td className="py-3 px-3 text-center text-slate-600">{mgr.checkin_comments_logged}</td>
+                    <td style={{ padding: '12px', textAlign: 'center', color: '#475569' }}>{mgr.checkin_comments_logged}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   )
@@ -197,37 +204,40 @@ function HeatmapTable({ data }: { data: HeatmapRow[] }) {
   const quarters = [...new Set(data.map((r) => r.quarter))]
   const lookup = new Map(data.map((r) => [`${r.department}|${r.quarter}`, r.completion_pct]))
 
-  const getColor = (pct: number) => {
-    if (pct >= 80) return 'bg-green-500 text-white'
-    if (pct >= 50) return 'bg-amber-400 text-white'
-    if (pct >= 20) return 'bg-orange-400 text-white'
-    return 'bg-red-400 text-white'
+  const getHeatColor = (pct: number): { bg: string; text: string } => {
+    if (pct >= 80) return { bg: '#16a34a', text: 'white' }
+    if (pct >= 50) return { bg: '#f59e0b', text: 'white' }
+    if (pct >= 20) return { bg: '#f97316', text: 'white' }
+    return { bg: '#ef4444', text: 'white' }
   }
 
+  const cellStyle = { padding: '8px 12px', border: '1px solid #e2e8f0', fontSize: '12px' }
+
   return (
-    <table className="text-xs border-collapse">
+    <table style={{ fontSize: '12px', borderCollapse: 'collapse' }}>
       <thead>
         <tr>
-          <th className="py-2 px-3 text-left font-medium text-slate-500 bg-slate-50 border border-slate-200">Department</th>
+          <th style={{ ...cellStyle, textAlign: 'left', fontWeight: 600, color: '#64748b', background: '#f8fafc' }}>Department</th>
           {quarters.map((q) => (
-            <th key={q} className="py-2 px-3 text-center font-medium text-slate-500 bg-slate-50 border border-slate-200 min-w-24">{q}</th>
+            <th key={q} style={{ ...cellStyle, textAlign: 'center', fontWeight: 600, color: '#64748b', background: '#f8fafc', minWidth: '96px' }}>{q}</th>
           ))}
         </tr>
       </thead>
       <tbody>
         {departments.map((dept) => (
           <tr key={dept}>
-            <td className="py-2 px-3 font-medium text-slate-700 border border-slate-200 bg-slate-50">{dept}</td>
+            <td style={{ ...cellStyle, fontWeight: 600, color: '#374151', background: '#f8fafc' }}>{dept}</td>
             {quarters.map((q) => {
               const pct = lookup.get(`${dept}|${q}`)
+              const hc = pct != null ? getHeatColor(pct) : null
               return (
-                <td key={q} className="py-2 px-3 text-center border border-slate-200">
-                  {pct != null ? (
-                    <span className={`inline-block rounded px-2 py-0.5 font-semibold ${getColor(pct)}`}>
+                <td key={q} style={{ ...cellStyle, textAlign: 'center' }}>
+                  {pct != null && hc ? (
+                    <span style={{ display: 'inline-block', borderRadius: '6px', padding: '2px 8px', fontWeight: 700, background: hc.bg, color: hc.text }}>
                       {pct}%
                     </span>
                   ) : (
-                    <span className="text-slate-300">—</span>
+                    <span style={{ color: '#cbd5e1' }}>—</span>
                   )}
                 </td>
               )
