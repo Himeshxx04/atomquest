@@ -269,6 +269,59 @@ def run():
 
         print("  ✓ Pranay Singh: SUBMITTED sheet (approve as manager → email to singhpranay2004@gmail.com)")
 
+        # ══════════════════════════════════════════════════════════════════════
+        # JOURNEY 5 — Himesh Pandey (pandeyhimesh09@gmail.com)
+        # Sheet: SUBMITTED — judge can approve as manager to verify email delivery
+        # ══════════════════════════════════════════════════════════════════════
+        himesh = db.query(User).filter_by(email="pandeyhimesh09@gmail.com").first()
+        if not himesh:
+            himesh = User(
+                name="Himesh Pandey",
+                email="pandeyhimesh09@gmail.com",
+                hashed_password=hash_password("Himesh@123"),
+                role="employee",
+                department="Engineering",
+                manager_id=manager.id,
+                is_active=True,
+            )
+            db.add(himesh)
+            db.flush()
+            print("  ✓ Himesh Pandey created")
+        else:
+            himesh.manager_id = manager.id
+            db.flush()
+            print("  – Himesh Pandey already exists (manager linked)")
+
+        clear_sheet(himesh.id, cycle_gs.id)
+
+        himesh_sheet = GoalSheet(
+            employee_id=himesh.id,
+            cycle_id=cycle_gs.id,
+            status=SheetStatus.SUBMITTED,
+            submitted_at=datetime(2026, 4, 16, 9, 0, tzinfo=timezone.utc),
+        )
+        db.add(himesh_sheet)
+        db.flush()
+
+        himesh_goals = [
+            Goal(goal_sheet_id=himesh_sheet.id, thrust_area_id=ta["Revenue Growth"].id,
+                 title="Launch 2 New Product Features by Q3",
+                 description="Deliver two customer-facing features to drive revenue growth.",
+                 uom_type=UoMType.MIN, target_numeric=2.0, weightage=40.0, is_locked=False),
+            Goal(goal_sheet_id=himesh_sheet.id, thrust_area_id=ta["Operational Excellence"].id,
+                 title="Reduce System Downtime to under 0.1%",
+                 description="Improve system reliability through proactive monitoring.",
+                 uom_type=UoMType.MAX, target_numeric=0.1, weightage=35.0, is_locked=False),
+            Goal(goal_sheet_id=himesh_sheet.id, thrust_area_id=ta["People Development"].id,
+                 title="Complete AWS Certification by Aug 2026",
+                 description="Obtain AWS Solutions Architect certification.",
+                 uom_type=UoMType.TIMELINE, target_date=date(2026, 8, 31), weightage=25.0, is_locked=False),
+        ]
+        for g in himesh_goals:
+            db.add(g)
+
+        print("  ✓ Himesh Pandey: SUBMITTED sheet (approve as manager → email to pandeyhimesh09@gmail.com)")
+
         db.commit()
         print("\n✅ Demo data populated successfully!")
         print("\nComplete user journeys ready:")
@@ -283,6 +336,8 @@ def run():
         print("             SUBMITTED sheet awaiting manager approval")
         print("  Pranay    → singhpranay2004@gmail.com / Pranay@123")
         print("             SUBMITTED sheet awaiting manager approval")
+        print("  Himesh    → pandeyhimesh09@gmail.com / Himesh@123")
+        print("             SUBMITTED sheet — approve as manager to verify email delivery")
 
     except Exception as e:
         db.rollback()

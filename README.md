@@ -10,23 +10,31 @@ A full-stack BRD-compliant goal management portal for enterprise performance tra
 
 | Service | URL |
 |---------|-----|
-| Frontend | *(coming soon — Render)* |
-| Backend API | *(coming soon — Render)* |
-| API Docs | `{backend-url}/docs` |
+| **Frontend** | **https://atomquest-frontend-ql5e.onrender.com** |
+| Backend API | https://atomquest-1.onrender.com |
+| API Docs | https://atomquest-1.onrender.com/docs |
 
 ---
 
 ## 🎭 Demo Credentials
 
-| Role | Email | Password |
-|------|-------|----------|
-| Employee | employee@demo.com | Employee@123 |
-| Manager | manager@demo.com | Manager@123 |
-| Admin | admin@demo.com | Admin@123 |
+Use the **blue Sign In button** (not Microsoft SSO) for the demo accounts below.
 
-> **Role switching shortcut**: Use the demo switch buttons on the login page to instantly jump between all three roles without re-entering credentials.
+| Role | Email | Password | What to explore |
+|------|-------|----------|-----------------|
+| **Employee** | employee@demo.com | Employee@123 | Approved goals, Q1 actuals logged, manager check-in comment |
+| **Manager** | manager@demo.com | Manager@123 | 3 submitted sheets pending approval, own goals, analytics |
+| **Admin** | admin@demo.com | Admin@123 | Org dashboard, user management, cycle config, export reports |
 
-> **Microsoft SSO**: Click "Sign in with Microsoft" to authenticate via Azure AD. Any Microsoft/Outlook/organizational account is accepted. Role is auto-assigned from Azure AD group membership.
+> **Quick role switching**: Once logged in as any `@demo.com` account, use the **Demo Role** switcher in the sidebar to instantly switch between Employee / Manager / Admin views without re-logging in.
+
+> **Microsoft SSO**: Click "Sign in with Microsoft" to authenticate via Azure AD. Any Microsoft/Outlook/organisational account is accepted.
+
+### Verify the email notification feature yourself
+1. Log in as **Admin** → **Users** → **Add User** (use your own real email, set a password, assign Manager User as manager)
+2. Log out → sign in as your new employee → create goals → **Submit**
+3. Log out → sign in as **Manager** → **Approvals** → **Approve** your sheet
+4. Check your inbox — you'll receive the approval email from SendGrid
 
 ---
 
@@ -51,9 +59,10 @@ A full-stack BRD-compliant goal management portal for enterprise performance tra
 - **Escalation engine**: APScheduler runs every 6 hours — flags employees who haven't submitted, managers who haven't approved, and missed check-in windows
 
 ### Bonus Features
+
 #### 5.1 — Microsoft Entra ID (Azure AD) SSO
 - MSAL v5 loginRedirect flow with `prompt: select_account`
-- Accepts any Microsoft/Outlook/organizational account (`/common` authority)
+- Accepts any Microsoft/Outlook/organisational account (`/common` authority)
 - Syncs org hierarchy from Graph API (`/me/manager`)
 - Auto-assigns role from Azure AD group names (`admin/hr` → admin, `manager/lead` → manager)
 - `AZURE_ADMIN_EMAILS` env var for designated admin override
@@ -87,11 +96,12 @@ See **[ARCHITECTURE.html](./ARCHITECTURE.html)** for the full interactive archit
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18, TypeScript, Vite, Zustand, React Router v6, Recharts, MSAL v5 |
-| Backend | FastAPI, Python 3.11+, SQLAlchemy 2.0, Pydantic v2, APScheduler, Alembic |
-| Database | PostgreSQL 15 |
+| Backend | FastAPI, Python 3.11+, SQLAlchemy 2.0, Pydantic v2, APScheduler |
+| Database | PostgreSQL 15 (Render managed) |
 | Auth | JWT (HS256) + Microsoft Entra ID SSO (OIDC) |
 | Email | SendGrid API |
 | Org Hierarchy | Microsoft Graph API |
+| Hosting | Render (Web Service + Static Site + PostgreSQL) |
 
 ---
 
@@ -108,14 +118,15 @@ See **[ARCHITECTURE.html](./ARCHITECTURE.html)** for the full interactive archit
 cd backend
 python -m venv venv
 venv\Scripts\activate          # Windows
+source venv/bin/activate       # Mac/Linux
 pip install -r requirements.txt
 
 # Copy and fill in environment variables
 cp .env.example .env
 
-# Run migrations and seed demo data
-alembic upgrade head
+# Create tables and seed demo data
 python scripts/seed.py
+python scripts/demo_data.py
 
 # Start server
 uvicorn app.main:app --reload
@@ -183,8 +194,9 @@ atomquest/
 │   │   ├── models/          # SQLAlchemy models
 │   │   ├── schemas/         # Pydantic schemas
 │   │   └── services/        # business logic, notifications, escalation
-│   ├── alembic/             # DB migrations
-│   └── scripts/seed.py      # Demo data seeder
+│   └── scripts/
+│       ├── seed.py          # Creates users, cycles, thrust areas
+│       └── demo_data.py     # Populates full user journey demo data
 ├── frontend/
 │   └── src/
 │       ├── pages/           # auth, employee, manager, admin
