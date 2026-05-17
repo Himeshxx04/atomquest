@@ -213,6 +213,59 @@ def run():
 
         print("  ✓ Manager journey: SUBMITTED sheet (judges can see manager also sets goals)")
 
+        # ══════════════════════════════════════════════════════════════════════
+        # JOURNEY 4 — Pranay Singh (singhpranay2004@gmail.com)
+        # Sheet: SUBMITTED — second live approval + email demo
+        # ══════════════════════════════════════════════════════════════════════
+        pranay = db.query(User).filter_by(email="singhpranay2004@gmail.com").first()
+        if not pranay:
+            pranay = User(
+                name="Pranay Singh",
+                email="singhpranay2004@gmail.com",
+                hashed_password=hash_password("Pranay@123"),
+                role="employee",
+                department="Operations",
+                manager_id=manager.id,
+                is_active=True,
+            )
+            db.add(pranay)
+            db.flush()
+            print("  ✓ Pranay Singh created")
+        else:
+            pranay.manager_id = manager.id
+            db.flush()
+            print("  – Pranay Singh already exists (manager linked)")
+
+        clear_sheet(pranay.id, cycle_gs.id)
+
+        pranay_sheet = GoalSheet(
+            employee_id=pranay.id,
+            cycle_id=cycle_gs.id,
+            status=SheetStatus.SUBMITTED,
+            submitted_at=datetime(2026, 4, 15, 10, 30, tzinfo=timezone.utc),
+        )
+        db.add(pranay_sheet)
+        db.flush()
+
+        pranay_goals = [
+            Goal(goal_sheet_id=pranay_sheet.id, thrust_area_id=ta["Operational Excellence"].id,
+                 title="Reduce Process TAT by 20%",
+                 description="Streamline operational workflows to reduce turnaround time.",
+                 uom_type=UoMType.MAX, target_numeric=20.0, weightage=35.0, is_locked=False),
+            Goal(goal_sheet_id=pranay_sheet.id, thrust_area_id=ta["Revenue Growth"].id,
+                 title="Increase Upsell Revenue to ₹15L",
+                 description="Drive revenue through cross-sell and upsell opportunities.",
+                 uom_type=UoMType.MIN, target_numeric=15.0, weightage=35.0, is_locked=False),
+            Goal(goal_sheet_id=pranay_sheet.id, thrust_area_id=ta["Safety & Compliance"].id,
+                 title="Zero Compliance Violations in FY2026",
+                 description="Maintain zero regulatory and compliance violations.",
+                 uom_type=UoMType.ZERO, target_numeric=0.0, weightage=30.0, is_locked=False),
+        ]
+        for g in pranay_goals:
+            db.add(g)
+
+        print("  ✓ Pranay Singh: SUBMITTED sheet (approve as manager → email to singhpranay2004@gmail.com)")
+
         db.commit()
         print("\n✅ Demo data populated successfully!")
         print("\nComplete user journeys ready:")
@@ -224,6 +277,8 @@ def run():
         print("  Admin     → admin@demo.com    / Admin@123")
         print("             Full org dashboard, 3 employees, reports downloadable")
         print("  Priyam    → priyamsingh723@gmail.com / Priyam@123")
+        print("             SUBMITTED sheet awaiting manager approval")
+        print("  Pranay    → singhpranay2004@gmail.com / Pranay@123")
         print("             SUBMITTED sheet awaiting manager approval")
 
     except Exception as e:
