@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Backend
-        run: curl -sf https://atomquest-1.onrender.com/health || echo "backend pinged"
+        run: curl -sf --max-time 60 https://atomquest-1.onrender.com/health || echo "backend pinged"
 
       - name: Ping Frontend
-        run: curl -sf https://atomquest-frontend-ql5e.onrender.com || echo "frontend pinged"
+        run: curl -sf --max-time 30 https://atomquest-frontend-ql5e.onrender.com || echo "frontend pinged"
