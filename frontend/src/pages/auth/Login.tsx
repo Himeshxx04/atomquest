@@ -90,7 +90,13 @@ export default function Login() {
       // Full page redirect — ensures ProtectedRoute sees the persisted token on load
       window.location.href = `/${role}`
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Invalid credentials')
+      const detail = err.response?.data?.detail
+      const message = typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+          ? 'Invalid credentials'   // Pydantic validation array — don't render raw objects
+          : 'Invalid credentials'
+      toast.error(message)
       setLoading(null)
     }
   }
