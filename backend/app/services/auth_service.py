@@ -61,7 +61,7 @@ def _graph_get_manager(access_token: str) -> dict | None:
             "https://graph.microsoft.com/v1.0/me/manager",
             headers={"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=3) as resp:
             return json.loads(resp.read())
     except Exception:
         return None
@@ -75,7 +75,7 @@ def _graph_get_groups(access_token: str) -> list[str]:
             "https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName",
             headers={"Authorization": f"Bearer {access_token}"},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=3) as resp:
             data = json.loads(resp.read())
             return [g.get("displayName") or "" for g in data.get("value", []) if g.get("displayName")]
     except Exception:
@@ -128,13 +128,18 @@ def login_via_azure(id_token: str, db: Session, access_token: str | None = None)
     role_from_ad: str = forced_role or "employee"
 
     if access_token:
-        # Get manager (org hierarchy)
-        manager_data = _graph_get_manager(access_token)
+        # Run both Graph API calls in parallel to avoid sequential latency
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            future_manager = executor.submit(_graph_get_manager, access_token)
+            future_groups  = executor.submit(_graph_get_groups,  access_token)
+            manager_data   = future_manager.result()
+            groups         = future_groups.result()
+
         if manager_data:
             manager_azure_email = manager_data.get("mail") or manager_data.get("userPrincipalName")
 
         # Get group memberships → derive role (skipped if email is in admin override list)
-        groups = _graph_get_groups(access_token)
         if groups and not forced_role:
             role_from_ad = _map_groups_to_role(groups)
             print(f"[Azure] {email} groups={groups} → role={role_from_ad}")
